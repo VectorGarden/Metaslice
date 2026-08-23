@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metaslice — tournament archetype breakdowns</title>
+<meta name="description" content="Turn tournament results into a shareable archetype pie chart. Upload CSV, TSV, JSON or XLSX, add archetype art, export PNG, JPG, WEBP, AVIF or SVG.">
+<!-- Icon is inlined so it works from file:// and from any folder. For hosting, the
+     files in assets/ are the same artwork: icon.svg and a 16-256px favicon.ico. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlRvdXJuYW1lbnQgUGllIj4KICA8dGl0bGU+VG91cm5hbWVudCBQaWU8L3RpdGxlPgogIDxyZWN0IHg9IjEuMiIgeT0iMS4yIiB3aWR0aD0iNjEuNiIgaGVpZ2h0PSI2MS42IiByeD0iMTUiIGZpbGw9IiMwRjEzMjQiLz4KICA8cmVjdCB4PSIyLjIiIHk9IjIuMiIgd2lkdGg9IjU5LjYiIGhlaWdodD0iNTkuNiIgcng9IjEzLjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0Q5QTQ0MSIgc3Ryb2tlLW9wYWNpdHk9Ii4yOCIgc3Ryb2tlLXdpZHRoPSIxLjEiLz4KICA8ZyBzdHJva2U9IiMwRjEzMjQiIHN0cm9rZS13aWR0aD0iMi40IiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0zMiAzMiBMMzIgMTIuNSBBMTkuNSAxOS41IDAgMCAxIDQ2Ljk0IDQ0LjUzIFoiIGZpbGw9IiNFMEIxNTEiLz4KICAgIDxwYXRoIGQ9Ik0zMiAzMiBMNDYuOTQgNDQuNTMgQTE5LjUgMTkuNSAwIDAgMSAxMi44MCAyOC42MSBaIiBmaWxsPSIjMjVCMjk0Ii8+CiAgICA8cGF0aCBkPSJNMzIgMzIgTDEyLjgwIDI4LjYxIEExOS41IDE5LjUgMCAwIDEgMzIgMTIuNSBaIiBmaWxsPSIjQzg2MDhDIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMS45MyAtMi4zMCkiLz4KICA8L2c+Cjwvc3ZnPgo=">
+<link rel="alternate icon" type="image/x-icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="assets/icon-256.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="canonical" href="https://metaslice.reizu.dev/">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0A0C14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#E9ECF4" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Metaslice">
+<meta property="og:url" content="https://metaslice.reizu.dev/">
+<meta property="og:title" content="Metaslice — tournament archetype breakdowns">
+<meta property="og:description" content="Turn tournament results into a shareable archetype pie chart. Upload CSV, TSV, JSON or XLSX, pull card art from YGOPRODeck, export PNG, JPG, WEBP, AVIF or SVG.">
+<meta property="og:image" content="https://metaslice.reizu.dev/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Metaslice — top cut, sliced">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Metaslice — tournament archetype breakdowns">
+<meta name="twitter:description" content="Turn tournament results into a shareable archetype pie chart, with card art, in your browser.">
+<meta name="twitter:image" content="https://metaslice.reizu.dev/assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  --display:'Chakra Petch','Trebuchet MS',system-ui,sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --gold:#D9A441; --teal:#1FA98C; --rose:#C05A85;
+}
+html[data-theme="dark"]{
+  --bg:#0A0C14; --bg-2:#070911; --panel:#141827; --panel-2:#1B2035; --edge:#262C45;
+  --ink:#ECEAF3; --muted:#98A0BE; --faint:#666E90;
+  --field:#0E1120; --shadow:0 18px 44px rgba(0,0,0,.55); --glow:.35;
+  --chart-bg:#11141F; --chart-ink:#ECEAF3; --chart-muted:#9AA2C0; --chart-edge:#11141F;
+}
+html[data-theme="light"]{
+  --bg:#E9ECF4; --bg-2:#DDE2EE; --panel:#FFFFFF; --panel-2:#F3F5FB; --edge:#D6DCEA;
+  --ink:#141828; --muted:#5A6280; --faint:#8B93AE;
+  --field:#F6F8FC; --shadow:0 14px 34px rgba(24,32,64,.14); --glow:.14;
+  --gold:#A9761A; --teal:#12806A; --rose:#A33F68;
+  --chart-bg:#FFFFFF; --chart-ink:#141828; --chart-muted:#5A6280; --chart-edge:#FFFFFF;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:14px; line-height:1.5;
+  background-image:radial-gradient(1100px 620px at 78% -8%, rgba(217,164,65,calc(var(--glow) * .34)), transparent 62%),
+                   radial-gradient(900px 560px at 4% 106%, rgba(31,169,140,calc(var(--glow) * .28)), transparent 60%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:4px}
+
+/* ---------- shell ---------- */
+.masthead{
+  display:flex; align-items:center; gap:14px; padding:14px clamp(14px,3vw,28px);
+  border-bottom:1px solid var(--edge); background:color-mix(in srgb, var(--panel) 72%, transparent);
+  backdrop-filter:blur(10px); position:sticky; top:0; z-index:20;
+}
+.mark{display:flex;align-items:center;gap:11px;min-width:0}
+.mark svg{width:34px;height:34px;flex:none}
+.wordmark{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:.02em;line-height:1.05;white-space:nowrap}
+.wordmark span{display:block;font-family:var(--body);font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.masthead .spacer{flex:1}
+
+/* ---------- controls ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:8px 13px;border-radius:var(--r-md);border:1px solid var(--edge);
+  background:var(--panel-2); cursor:pointer; font-weight:500; font-size:13.5px;
+  transition:background .15s, border-color .15s, transform .06s;
+}
+.btn:hover{border-color:color-mix(in srgb,var(--gold) 55%, var(--edge))}
+.btn:active{transform:translateY(1px)}
+.btn svg{width:16px;height:16px}
+.btn.primary{
+  background:linear-gradient(180deg, color-mix(in srgb,var(--gold) 92%, #fff) , var(--gold));
+  border-color:color-mix(in srgb,var(--gold) 70%, #000); color:#20170A; font-weight:600;
+}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 9px;font-size:12.5px;border-radius:var(--r-sm)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.icon-btn{width:36px;height:36px;padding:0;border-radius:var(--r-md);display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--edge);background:var(--panel-2);cursor:pointer}
+.icon-btn svg{width:18px;height:18px}
+
+/* sun / moon toggle */
+#themeToggle{position:relative;overflow:hidden}
+#themeToggle .sun,#themeToggle .moon{position:absolute;transition:transform .38s cubic-bezier(.5,1.6,.5,1), opacity .25s}
+html[data-theme="dark"] #themeToggle .sun{transform:translateY(0) rotate(0);opacity:1}
+html[data-theme="dark"] #themeToggle .moon{transform:translateY(22px) rotate(-40deg);opacity:0}
+html[data-theme="light"] #themeToggle .sun{transform:translateY(-22px) rotate(40deg);opacity:0}
+html[data-theme="light"] #themeToggle .moon{transform:translateY(0) rotate(0);opacity:1}
+
+input[type=text],input[type=number],input[type=url],select,textarea{
+  width:100%;background:var(--field);border:1px solid var(--edge);border-radius:var(--r-sm);
+  padding:7px 9px;font-size:13.5px;
+}
+textarea{resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.55}
+input[type=range]{width:100%;accent-color:var(--gold)}
+input[type=color]{width:100%;height:30px;padding:2px;background:var(--field);border:1px solid var(--edge);border-radius:var(--r-sm);cursor:pointer}
+label.field{display:block;margin-bottom:10px}
+label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;font-weight:500}
+.row{display:grid;gap:10px}
+.row.two{grid-template-columns:1fr 1fr}
+.row.three{grid-template-columns:1fr 1fr 1fr}
+.switch{display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer;user-select:none}
+.switch input{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--edge);position:relative;cursor:pointer;flex:none;transition:background .18s}
+.switch input::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:transform .18s}
+.switch input:checked{background:var(--gold)}
+.switch input:checked::after{transform:translateX(14px)}
+.seg{display:flex;background:var(--field);border:1px solid var(--edge);border-radius:var(--r-md);padding:2px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;padding:6px 4px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.12)}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:clamp(12px,2vw,22px);padding:clamp(12px,2vw,22px);align-items:stretch}
+.panelstack{display:flex;flex-direction:column;gap:12px;min-width:0;align-self:start}
+.panel{background:var(--panel);border:1px solid var(--edge);border-radius:var(--r-lg);box-shadow:var(--shadow)}
+.panel > summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 16px;
+  font-family:var(--display);font-weight:600;font-size:14.5px;letter-spacing:.03em;
+}
+.panel > summary::-webkit-details-marker{display:none}
+.panel > summary::after{content:"";margin-left:auto;width:7px;height:7px;border-right:2px solid var(--faint);border-bottom:2px solid var(--faint);transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+.panel[open] > summary::after{transform:rotate(-135deg) translateY(-2px)}
+.panel .step{font-family:var(--mono);font-size:11px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 40%, transparent);border-radius:5px;padding:1px 5px}
+.panel .body{padding:2px 16px 16px}
+.hint{font-size:12px;color:var(--faint);margin:6px 0 0}
+.hint code{font-family:var(--mono);font-size:11.5px;background:var(--field);padding:1px 4px;border-radius:4px;border:1px solid var(--edge)}
+
+/* preview */
+.stage{position:relative;min-width:0}
+.stage-inner{position:sticky;top:74px}
+.canvas-card{
+  background:var(--panel);border:1px solid var(--edge);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow);
+  position:relative;overflow:hidden;
+}
+.canvas-card::before{
+  content:"";position:absolute;inset:-40% -10% auto -10%;height:70%;pointer-events:none;
+  background:conic-gradient(from .25turn, color-mix(in srgb,var(--gold) 30%, transparent), color-mix(in srgb,var(--teal) 26%, transparent), color-mix(in srgb,var(--rose) 26%, transparent), color-mix(in srgb,var(--gold) 30%, transparent));
+  filter:blur(60px);opacity:calc(var(--glow) * .85);
+}
+#preview{position:relative;display:block;width:100%;border-radius:var(--r-md);overflow:hidden}
+#preview svg{display:block;margin:0 auto;max-width:100%;width:auto;height:auto;max-height:calc(100vh - 210px)}
+.stage-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 4px 2px;position:relative}
+.stat{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.stat b{color:var(--ink);font-weight:500}
+
+/* drop zone */
+.drop{
+  border:1.5px dashed var(--edge);border-radius:var(--r-md);padding:18px 14px;text-align:center;cursor:pointer;
+  background:var(--field);transition:border-color .15s,background .15s;
+}
+.drop:hover,.drop.over{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 8%, var(--field))}
+.drop b{display:block;font-weight:600;margin-bottom:2px}
+.drop small{color:var(--faint)}
+
+/* archetype rows */
+.arch-list{display:flex;flex-direction:column;gap:8px;max-height:min(52vh,520px);overflow:auto;margin:0 -4px;padding:2px 4px}
+.arch{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--panel-2);border:1px solid var(--edge);border-radius:var(--r-md);padding:8px}
+.arch.other{border-style:dashed}
+.art{
+  width:44px;height:44px;border-radius:50%;border:2px solid var(--edge);background:var(--field);cursor:pointer;
+  background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;
+  color:var(--faint);font-size:10px;text-align:center;position:relative;flex:none;
+}
+.art.warn{border-color:var(--rose)}
+.arch-name{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arch-meta{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.arch-subs{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--field);border:1px solid var(--edge);border-radius:999px;padding:2px 8px 2px 3px;font-size:11.5px;cursor:pointer}
+.chip i{width:18px;height:18px;border-radius:50%;background:var(--edge) center/cover;display:block;flex:none}
+.swatch{width:26px;height:26px;border-radius:7px;border:1px solid var(--edge);padding:0;cursor:pointer;background:transparent}
+.swatch input{opacity:0;width:0;height:0;position:absolute}
+
+/* manual table */
+.tbl{width:100%;border-collapse:separate;border-spacing:0 5px;font-size:13px}
+.tbl th{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);text-align:left;font-weight:500;padding:0 4px}
+.tbl td{padding:0 2px}
+.tbl input{padding:5px 7px}
+.tbl .x{border:0;background:transparent;color:var(--faint);cursor:pointer;padding:4px 6px;font-size:15px;line-height:1}
+.tbl .x:hover{color:var(--rose)}
+
+.toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:60;max-width:min(380px,86vw)}
+.toast{background:var(--panel);border:1px solid var(--edge);border-left:3px solid var(--gold);border-radius:var(--r-md);padding:10px 13px;box-shadow:var(--shadow);font-size:13px;animation:slide .22s ease}
+.toast.bad{border-left-color:var(--rose)}
+.toast.good{border-left-color:var(--teal)}
+@keyframes slide{from{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr}
+  .stage{order:-1}
+  .stage-inner{position:static}
+  #preview svg{max-height:none}
+  .arch-list{max-height:none}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="mark">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="1.2" y="1.2" width="61.6" height="61.6" rx="15" fill="#0F1324"/>
+      <rect x="2.2" y="2.2" width="59.6" height="59.6" rx="13.6" fill="none" stroke="#D9A441" stroke-opacity=".28" stroke-width="1.1"/>
+      <g stroke="#0F1324" stroke-width="2.4" stroke-linejoin="round">
+        <path d="M32 32 L32 12.5 A19.5 19.5 0 0 1 46.94 44.53 Z" fill="#E0B151"/>
+        <path d="M32 32 L46.94 44.53 A19.5 19.5 0 0 1 12.80 28.61 Z" fill="#25B294"/>
+        <path d="M32 32 L12.80 28.61 A19.5 19.5 0 0 1 32 12.5 Z" fill="#C8608C" transform="translate(-1.93 -2.30)"/>
+      </g>
+    </svg>
+    <div class="wordmark">Metaslice<span>Top cut, sliced</span></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn ghost sm" id="btnSaveConfig" title="Download archetype colours, art and settings as JSON">Save setup</button>
+  <button class="btn ghost sm" id="btnLoadConfig" title="Restore a saved setup">Load setup</button>
+  <button class="icon-btn" id="themeToggle" aria-label="Switch between light and dark" title="Light / dark">
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M5 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6L17 17M7 7L5.4 5.4"/>
+    </svg>
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20.5 14.6A8.6 8.6 0 1 1 9.4 3.5a6.9 6.9 0 0 0 11.1 11.1Z"/>
+    </svg>
+  </button>
+</header>
+
+<main class="app">
+  <div class="panelstack">
+
+    <details class="panel" open>
+      <summary><span class="step">01</span> Results</summary>
+      <div class="body">
+        <div class="seg" role="tablist" id="srcTabs" style="margin-bottom:12px">
+          <button role="tab" data-src="file" aria-pressed="true">File</button>
+          <button role="tab" data-src="paste" aria-pressed="false">Paste</button>
+          <button role="tab" data-src="manual" aria-pressed="false">Type it in</button>
+        </div>
+
+        <div data-pane="file">
+          <div class="drop" id="drop" tabindex="0" role="button">
+            <b>Drop a results file, or click to pick one</b>
+            <small>CSV · TSV · JSON · XLSX</small>
+          </div>
+          <input type="file" id="fileInput" class="sr" accept=".csv,.tsv,.txt,.json,.xlsx,.xlsm,.xls">
+          <p class="hint">Columns are matched by name, in any order: <code>archetype</code>, <code>sub</code>, <code>count</code>, <code>placement</code>, <code>image</code>. One row per deck also works — leave <code>count</code> out and each row counts as one.</p>
+        </div>
+
+        <div data-pane="paste" hidden>
+          <textarea id="pasteBox" rows="9" placeholder="archetype,sub,count&#10;Ryzeal,Fiendsmith,14&#10;Maliss,,9&#10;Tenpai Dragon,,7"></textarea>
+          <div class="row two" style="margin-top:8px">
+            <button class="btn" id="btnParsePaste">Read this</button>
+            <button class="btn ghost" id="btnSample">Load sample event</button>
+          </div>
+        </div>
+
+        <div data-pane="manual" hidden>
+          <table class="tbl"><thead><tr><th style="width:38%">Archetype</th><th style="width:28%">Sub</th><th style="width:15%">Count</th><th style="width:15%">Place</th><th></th></tr></thead><tbody id="manualBody"></tbody></table>
+          <div class="row two" style="margin-top:8px">
+            <button class="btn" id="btnAddRow">Add row</button>
+            <button class="btn ghost" id="btnClearRows">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary><span class="step">02</span> Slices</summary>
+      <div class="body">
+        <div class="row two" style="margin-bottom:10px">
+          <label class="field" style="margin:0"><span>Top cut</span>
+            <select id="optTopCut">
+              <option value="0">Everyone</option><option value="4">Top 4</option><option value="8">Top 8</option>
+              <option value="16">Top 16</option><option value="32">Top 32</option><option value="64">Top 64</option>
+            </select>
+          </label>
+          <label class="field" style="margin:0"><span>Group under “Other” below</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="range" id="optThreshold" min="0" max="20" step="0.5" value="5">
+              <b id="thresholdOut" class="stat" style="min-width:46px;text-align:right">5%</b>
+            </div>
+          </label>
+        </div>
+        <p class="hint" id="topCutHint" style="margin-bottom:10px"></p>
+        <div class="row two" style="margin-bottom:10px">
+          <button class="btn" id="btnFetchAll">Get all art</button>
+          <button class="btn ghost" id="btnClearArt">Clear all art</button>
+        </div>
+        <div class="arch-list" id="archList"></div>
+        <p class="hint"><b>Get all art</b> looks every archetype and sub-archetype up on YGOPRODeck in one pass and fills in whatever it finds. Click any portrait to set that one by hand instead — upload an image, paste a URL, or look it up on its own.</p>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary><span class="step">03</span> Chart</summary>
+      <div class="body">
+        <label class="field"><span>Title</span><input type="text" id="optTitle" placeholder="YCS Montreal"></label>
+        <label class="field"><span>Subtitle</span><input type="text" id="optSubtitle" placeholder="1,204 decks · Top 32"></label>
+        <div class="row two">
+          <label class="field"><span>Labels</span>
+            <select id="optLabels"><option value="outside">Around the edge</option><option value="inside">Inside slices</option><option value="none">Legend only</option></select>
+          </label>
+          <label class="field"><span>Legend</span>
+            <select id="optLegend"><option value="right">On the right</option><option value="bottom">Underneath</option><option value="none">Hidden</option></select>
+          </label>
+        </div>
+        <div class="row two">
+          <label class="field"><span>Centre hole</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="range" id="optDonut" min="0" max="70" step="5" value="0">
+              <b id="donutOut" class="stat" style="min-width:40px;text-align:right">0%</b>
+            </div>
+          </label>
+          <label class="field"><span>Slice gap</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="range" id="optGap" min="0" max="6" step="0.5" value="2">
+              <b id="gapOut" class="stat" style="min-width:40px;text-align:right">2</b>
+            </div>
+          </label>
+        </div>
+        <label class="switch"><input type="checkbox" id="optImages" checked> Archetype art in the slices</label>
+        <label class="switch" style="margin-left:22px"><input type="checkbox" id="optArtFill"> Let the art fill the whole slice</label>
+        <label class="switch"><input type="checkbox" id="optSubs" checked> Sub-archetype bubbles</label>
+        <label class="switch"><input type="checkbox" id="optCounts" checked> Show deck counts next to percentages</label>
+        <label class="switch"><input type="checkbox" id="optSortAlpha"> Sort A→Z instead of biggest first</label>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary><span class="step">04</span> Export</summary>
+      <div class="body">
+        <div class="row two">
+          <label class="field"><span>Format</span>
+            <select id="optFormat">
+              <option value="image/png">PNG</option><option value="image/jpeg">JPG</option>
+              <option value="image/webp">WEBP</option><option value="image/avif">AVIF</option>
+              <option value="image/svg+xml">SVG (vector)</option>
+            </select>
+          </label>
+          <label class="field"><span>Width in pixels</span><input type="number" id="optWidth" min="200" max="8000" step="50" value="1600"></label>
+        </div>
+        <div class="seg" id="sizePresets" style="margin-bottom:10px">
+          <button type="button" data-w="800">800</button><button type="button" data-w="1200">1200</button>
+          <button type="button" data-w="1600" aria-pressed="true">1600</button><button type="button" data-w="2400">2400</button>
+          <button type="button" data-w="4096">4K</button>
+        </div>
+        <label class="field" style="margin-bottom:6px"><span>What goes in the file</span></label>
+        <div class="seg" id="scopeSeg" style="margin-bottom:12px">
+          <button type="button" data-scope="chart">Pie only</button>
+          <button type="button" data-scope="labels">Pie + labels</button>
+          <button type="button" data-scope="full" aria-pressed="true">Everything</button>
+        </div>
+        <label class="field" id="qualityField"><span>Quality <b id="qualityOut" class="stat">92</b></span><input type="range" id="optQuality" min="40" max="100" step="1" value="92"></label>
+        <label class="switch"><input type="checkbox" id="optTransparent"> Transparent background</label>
+        <div class="row two" style="margin-top:10px">
+          <button class="btn primary" id="btnDownload">Download chart</button>
+          <button class="btn" id="btnCopy">Copy image</button>
+        </div>
+        <p class="hint" id="exportHint">Exported at <b id="exportDims">—</b>.</p>
+      </div>
+    </details>
+  </div>
+
+  <section class="stage">
+    <div class="stage-inner">
+      <div class="canvas-card"><div id="preview"></div></div>
+      <div class="stage-bar">
+        <span class="stat"><b id="statDecks">0</b> decks</span>
+        <span class="stat">·</span>
+        <span class="stat"><b id="statSlices">0</b> slices</span>
+        <span class="stat" id="statOther"></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<input type="file" id="artInput" class="sr" accept="image/*">
+<input type="file" id="configInput" class="sr" accept=".json">
+<script>
+"use strict";
+/* ============================ tiny helpers ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+const keyOf = s => String(s || "").trim().toLowerCase();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function toast(msg, kind = "", ms = 4200) {
+  const t = document.createElement("div");
+  t.className = "toast " + kind;
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, ms);
+}
+
+const PALETTE = ["#E0B152","#2F9E8F","#C0577F","#5B7FD4","#8B62C9","#D0743C","#4FA96B","#C94F4F",
+                 "#3F8FB8","#B98BD6","#7E9B3F","#DA8FA8","#5C6BC0","#B0873C","#57A8A0","#A65B9B",
+                 "#6FA0DC","#CFA13F","#7DBE6A","#9A6BD0"];
+const OTHER_KEY = "__other__";
+// Original ornamental card back, drawn for this app — used as the default face of the
+// "Other" slice. Swap it for your own image by clicking the Other portrait.
+const CARD_BACK = "data:image/png;base64,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";
+const DEFAULT_OTHER_ART = () => ({ src: CARD_BACK, embedded: true, isDefault: true });
+const OTHER_COLOR = "#7C8399";
+
+function shade(hex, amt) { // amt -1..1
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const f = v => Math.round(amt >= 0 ? v + (255 - v) * amt : v * (1 + amt));
+  return "#" + [f(r), f(g), f(b)].map(v => clamp(v,0,255).toString(16).padStart(2, "0")).join("");
+}
+function readableOn(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const L = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+  return L > 150 ? "#15182A" : "#FFFFFF";
+}
+
+/* ============================ state ============================ */
+const state = {
+  rows: [],                    // {archetype, sub, count, placement}
+  colors: {},                  // key -> hex
+  art: {},                     // key -> {src, embedded}
+  hadPlacements: false,
+  opts: {
+    topCut: 0, threshold: 5, title: "", subtitle: "", labels: "outside", legend: "right",
+    donut: 0, gap: 2, images: true, artFill: false, subs: true, counts: true, sortAlpha: false
+  },
+  exportOpts: { format: "image/png", width: 1600, quality: 92, transparent: false, scope: "full" }
+};
+const artKey = (a, s) => s ? keyOf(a) + "::" + keyOf(s) : keyOf(a);
+const sliceArtKey = s => s.isOther ? OTHER_KEY : s.key;
+
+/* ============================ parsing ============================ */
+const ALIASES = {
+  archetype: ["archetype","deck","deckname","deck name","deck type","decktype","theme","strategy","name","list"],
+  sub:       ["sub","subarchetype","sub archetype","sub-archetype","variant","engine","subtype","sub type","secondary","package","build"],
+  count:     ["count","entries","decks","qty","quantity","total","amount","num","number","players","copies","#"],
+  pct:       ["percent","percentage","pct","share","%"],
+  placement: ["place","placement","rank","ranking","position","finish","standing","result","top"],
+  image:     ["image","img","art","icon","picture","url","imageurl","image url","image_url"]
+};
+function headerRole(cell) {
+  const c = keyOf(cell).replace(/[_\-]+/g, " ").trim();
+  for (const role in ALIASES) if (ALIASES[role].includes(c)) return role;
+  return null;
+}
+function splitDelimited(text, delim) {
+  const out = []; let row = [], field = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === delim) { row.push(field); field = ""; }
+    else if (ch === "\n") { row.push(field); out.push(row); row = []; field = ""; }
+    else if (ch === "\r") { /* skip */ }
+    else field += ch;
+  }
+  row.push(field); out.push(row);
+  return out.filter(r => r.some(c => String(c).trim() !== ""));
+}
+function sniffDelimiter(text) {
+  const line = text.split(/\r?\n/).find(l => l.trim()) || "";
+  const counts = { ",": 0, "\t": 0, ";": 0, "|": 0 };
+  for (const ch of line) if (ch in counts) counts[ch]++;
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][1] ? Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] : ",";
+}
+const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return Number.isFinite(n) ? n : null; };
+
+function rowsFromCells(cells) {
+  if (!cells.length) return [];
+  const map = {}; let headerIdx = -1;
+  for (let i = 0; i < Math.min(4, cells.length); i++) {
+    const roles = cells[i].map(headerRole);
+    if (roles.filter(Boolean).length >= 1 && roles.some(r => r === "archetype" || r === "count" || r === "placement")) {
+      roles.forEach((r, j) => { if (r && !(r in map)) map[r] = j; });
+      headerIdx = i; break;
+    }
+  }
+  const body = cells.slice(headerIdx + 1);
+  if (headerIdx === -1) { // positional fallback
+    map.archetype = 0;
+    if (cells[0].length > 1 && num(cells[0][1]) !== null) map.count = 1;
+  }
+  const out = [];
+  for (const r of body) {
+    const name = String(r[map.archetype ?? 0] ?? "").trim();
+    if (!name || headerRole(name)) continue;
+    const count = "count" in map ? num(r[map.count]) : ("pct" in map ? num(r[map.pct]) : null);
+    const rec = {
+      archetype: name,
+      sub: "sub" in map ? String(r[map.sub] ?? "").trim() : "",
+      count: count === null ? 1 : count,
+      placement: "placement" in map ? num(r[map.placement]) : null
+    };
+    if ("image" in map) { const u = String(r[map.image] ?? "").trim(); if (/^https?:/i.test(u)) rec.image = u; }
+    if (rec.count > 0) out.push(rec);
+  }
+  return out;
+}
+function rowsFromJSON(data) {
+  if (Array.isArray(data)) {
+    if (!data.length) return [];
+    if (Array.isArray(data[0])) return rowsFromCells(data.map(r => r.map(c => c ?? "")));
+    const keys = Object.keys(data[0]);
+    const cells = [keys, ...data.map(o => keys.map(k => o[k] ?? ""))];
+    return rowsFromCells(cells);
+  }
+  if (data && typeof data === "object") {
+    if (Array.isArray(data.rows)) return rowsFromJSON(data.rows);
+    return Object.entries(data).filter(([, v]) => typeof v === "number")
+      .map(([k, v]) => ({ archetype: k, sub: "", count: v, placement: null }));
+  }
+  return [];
+}
+async function readXLSX(file) {
+  if (!window.XLSX) {
+    await new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.onload = res; s.onerror = () => rej(new Error("no-sheetjs"));
+      document.head.appendChild(s);
+    });
+  }
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  return rowsFromCells(XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" }));
+}
+async function ingestFile(file) {
+  const name = (file.name || "").toLowerCase();
+  try {
+    let rows;
+    if (/\.(xlsx|xlsm|xls)$/.test(name)) rows = await readXLSX(file);
+    else {
+      const text = await file.text();
+      if (/\.json$/.test(name) || /^\s*[[{]/.test(text)) rows = rowsFromJSON(JSON.parse(text));
+      else rows = rowsFromCells(splitDelimited(text, /\.tsv$/.test(name) ? "\t" : sniffDelimiter(text)));
+    }
+    if (!rows.length) return toast("No archetype rows found in that file. Check the column names.", "bad");
+    applyRows(rows, file.name);
+  } catch (err) {
+    if (err && err.message === "no-sheetjs") toast("Couldn't load the spreadsheet reader — save the sheet as CSV and try again.", "bad");
+    else toast("Couldn't read that file: " + (err && err.message ? err.message : "unknown format"), "bad");
+  }
+}
+function applyRows(rows, sourceName) {
+  state.rows = rows;
+  state.hadPlacements = rows.some(r => Number.isFinite(r.placement));
+  rows.forEach(r => { if (r.image) state.art[artKey(r.archetype, "")] = { src: r.image, embedded: false }; });
+  const total = rows.reduce((s, r) => s + (r.count || 1), 0);
+  if (!state.opts.subtitle) { state.opts.subtitle = `${total.toLocaleString()} decks`; $("#optSubtitle").value = state.opts.subtitle; }
+  syncManualTable(); refresh();
+  toast(`Read ${rows.length} rows${sourceName ? " from " + sourceName : ""}.`, "good");
+}
+
+/* ============================ aggregation ============================ */
+function aggregate() {
+  let rows = state.rows.filter(r => r.archetype && String(r.archetype).trim());
+  const topN = +state.opts.topCut;
+  let cutMode = "none";
+  if (topN > 0) {
+    if (state.hadPlacements) { rows = rows.filter(r => Number.isFinite(r.placement) && r.placement <= topN); cutMode = "placement"; }
+    else cutMode = "byCount";
+  }
+  const map = new Map();
+  for (const r of rows) {
+    const k = keyOf(r.archetype);
+    let e = map.get(k);
+    if (!e) { e = { key: k, name: String(r.archetype).trim(), total: 0, subs: new Map() }; map.set(k, e); }
+    const c = Number.isFinite(r.count) ? r.count : 1;
+    e.total += c;
+    const sub = String(r.sub || "").trim();
+    if (sub) {
+      const sk = keyOf(sub);
+      const s = e.subs.get(sk) || { key: sk, name: sub, total: 0, parent: e.name };
+      s.total += c; e.subs.set(sk, s);
+    }
+  }
+  let items = [...map.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  if (cutMode === "byCount") items = items.slice(0, topN);
+
+  const grand = items.reduce((s, i) => s + i.total, 0);
+  const thr = (state.opts.threshold / 100) * grand;
+  let keep = items, other = [];
+  if (state.opts.threshold > 0 && grand > 0) {
+    keep = []; other = [];
+    items.forEach(it => (it.total < thr ? other : keep).push(it));
+    if (!keep.length) { keep = items; other = []; }
+    if (other.length === 1) { keep.push(other.pop()); keep.sort((a, b) => b.total - a.total); }
+  }
+  keep.forEach((it, i) => { it.color = state.colors[it.key] || PALETTE[i % PALETTE.length]; });
+  if (other.length) {
+    keep.push({
+      key: OTHER_KEY, name: "Other", isOther: true,
+      total: other.reduce((s, o) => s + o.total, 0),
+      color: state.colors[OTHER_KEY] || OTHER_COLOR,
+      members: other,
+      subs: new Map(other.map(o => [o.key, { key: o.key, name: o.name, total: o.total, parent: "Other" }]))
+    });
+  }
+  if (state.opts.sortAlpha) {
+    keep.sort((a, b) => a.isOther - b.isOther || a.name.localeCompare(b.name));
+  }
+  keep.forEach(it => {
+    it.subList = [...it.subs.values()].sort((a, b) => b.total - a.total).filter(s => s.total > 0);
+    it.pct = grand ? it.total / grand : 0;
+  });
+  return { slices: keep, grand, otherCount: other.length, cutMode };
+}
+
+/* ============================ chart ============================ */
+const SVGNS = "http://www.w3.org/2000/svg";
+const XLINK = "http://www.w3.org/1999/xlink";
+const TAU = Math.PI * 2;
+const CHART_FONT = "Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+let uid = 0;
+
+function el(tag, attrs, text) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs || {}) if (attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+  if (text !== undefined && text !== null) e.textContent = text;
+  return e;
+}
+function imageNode(attrs, href) {
+  const e = el("image", attrs);
+  e.setAttribute("href", href);
+  e.setAttributeNS(XLINK, "xlink:href", href);
+  return e;
+}
+function arcPath(cx, cy, rO, rI, a0, a1) {
+  const P = (rr, a) => [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+  if (a1 - a0 >= TAU - 1e-6) {
+    let d = `M ${cx + rO} ${cy} A ${rO} ${rO} 0 1 1 ${cx - rO} ${cy} A ${rO} ${rO} 0 1 1 ${cx + rO} ${cy} Z`;
+    if (rI > 0) d += ` M ${cx + rI} ${cy} A ${rI} ${rI} 0 1 0 ${cx - rI} ${cy} A ${rI} ${rI} 0 1 0 ${cx + rI} ${cy} Z`;
+    return d;
+  }
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const [x0, y0] = P(rO, a0), [x1, y1] = P(rO, a1);
+  if (rI <= 0) return `M ${cx} ${cy} L ${x0} ${y0} A ${rO} ${rO} 0 ${large} 1 ${x1} ${y1} Z`;
+  const [x2, y2] = P(rI, a1), [x3, y3] = P(rI, a0);
+  return `M ${x0} ${y0} A ${rO} ${rO} 0 ${large} 1 ${x1} ${y1} L ${x2} ${y2} A ${rI} ${rI} 0 ${large} 0 ${x3} ${y3} Z`;
+}
+function sliceBBox(cx, cy, rO, rI, a0, a1) {
+  const xs = [], ys = [];
+  const n = Math.max(10, Math.ceil((a1 - a0) / 0.12));
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * i / n;
+    xs.push(cx + rO * Math.cos(a), cx + rI * Math.cos(a));
+    ys.push(cy + rO * Math.sin(a), cy + rI * Math.sin(a));
+  }
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+function fit(text, px, fontPx) {
+  const max = Math.max(3, Math.floor(px / (fontPx * 0.56)));
+  return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
+}
+function initials(name) {
+  const w = name.replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+  return ((w[0] || "?")[0] + (w[1] ? w[1][0] : "")).toUpperCase();
+}
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  return { bg: g("--chart-bg") || "#fff", ink: g("--chart-ink") || "#111", muted: g("--chart-muted") || "#666" };
+}
+
+function buildChart(agg, ov) {
+  const o = Object.assign({}, state.opts, ov || {}), T = themeColors();
+  const slices = agg.slices;
+  const showSubs = o.subs, showImg = o.images;
+  const titleH = (o.title ? 36 : 0) + (o.subtitle ? 24 : 0) + (o.title || o.subtitle ? 14 : 0);
+  const bare = o.legend === "none" && o.labels === "none" && !titleH;
+  const PAD = bare ? 26 : 44, LEG_W = 322;
+
+  let W = bare ? 900 : o.legend === "right" ? 1240 : o.labels === "outside" ? 1180 : 980;
+  let H = bare ? 900 : 820, legendH = 0, legendCols = 1;
+  if (o.legend === "bottom") {
+    legendCols = slices.length > 8 ? 3 : 2;
+    legendH = Math.ceil(slices.length / legendCols) * 26 + 18;
+    H = 780 + legendH;
+  }
+  const top = PAD + titleH;
+  const availW = o.legend === "right" ? W - LEG_W - PAD * 2 : W - PAD * 2;
+  const availH = (o.legend === "bottom" ? H - legendH : H) - top - PAD;
+  const labelRoom = o.labels === "outside" ? 176 : 12;
+  const rO = Math.max(80, Math.min((availW - labelRoom * 2) / 2, (availH - (o.labels === "outside" ? 34 : 8)) / 2));
+  const rI = rO * (o.donut / 100);
+  const band = rO - rI;
+  const cx = PAD + availW / 2, cy = top + availH / 2;
+
+  const svg = el("svg", {
+    xmlns: SVGNS, "xmlns:xlink": XLINK, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
+    "font-family": CHART_FONT, role: "img"
+  });
+  svg.appendChild(el("title", {}, (o.title || "Tournament") + " archetype breakdown"));
+  const defs = el("defs"); svg.appendChild(defs);
+  const bgRect = el("rect", { id: "chart-bg", x: 0, y: 0, width: W, height: H, fill: T.bg });
+  svg.appendChild(bgRect);
+
+  if (o.title) svg.appendChild(el("text", { x: PAD, y: PAD + 26, fill: T.ink, "font-size": 29, "font-weight": 700, "letter-spacing": "-0.4" }, o.title));
+  if (o.subtitle) svg.appendChild(el("text", { x: PAD, y: PAD + (o.title ? 52 : 22), fill: T.muted, "font-size": 15 }, o.subtitle));
+
+  if (!slices.length) {
+    svg.appendChild(el("text", { x: W / 2, y: H / 2, fill: T.muted, "font-size": 20, "text-anchor": "middle" }, "Add tournament results to build a chart"));
+    return { svg, W, H };
+  }
+
+  /* --- geometry --- */
+  let a = -Math.PI / 2;
+  slices.forEach(s => { s.a0 = a; s.a1 = a + s.pct * TAU; a = s.a1; });
+
+  const gSlices = el("g"); svg.appendChild(gSlices);
+  const gArt = el("g"); svg.appendChild(gArt);
+  const gLabels = el("g"); svg.appendChild(gLabels);
+
+  const addCirclePic = (parent, x, y, rr, art, fallbackColor, fallbackText) => {
+    if (art && art.src) {
+      const id = "clip" + (++uid);
+      const cp = el("clipPath", { id });
+      cp.appendChild(el("circle", { cx: x, cy: y, r: rr }));
+      defs.appendChild(cp);
+      parent.appendChild(imageNode({
+        x: x - rr, y: y - rr, width: rr * 2, height: rr * 2,
+        preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#${id})`
+      }, art.src));
+    } else {
+      parent.appendChild(el("circle", { cx: x, cy: y, r: rr, fill: shade(fallbackColor, -0.45) }));
+      if (rr >= 13) parent.appendChild(el("text", {
+        x, y: y + rr * 0.34, "text-anchor": "middle", "font-size": Math.round(rr * 0.95),
+        "font-weight": 700, fill: "#ffffff", "fill-opacity": .82
+      }, fallbackText));
+    }
+    parent.appendChild(el("circle", { cx: x, cy: y, r: rr, fill: "none", stroke: "#ffffff", "stroke-opacity": .78, "stroke-width": Math.max(1.5, rr * 0.09) }));
+  };
+
+  for (const s of slices) {
+    const d = arcPath(cx, cy, rO, rI, s.a0, s.a1);
+    const path = el("path", {
+      d, fill: s.color,
+      stroke: T.bg, "stroke-width": o.gap, "stroke-linejoin": "round"
+    });
+    path.appendChild(el("title", {}, `${s.name} — ${s.total} (${(s.pct * 100).toFixed(1)}%)`));
+    gSlices.appendChild(path);
+
+    const span = s.a1 - s.a0;
+    const hasSubs = showSubs && s.subList.length > 0;
+    const midR = rI + band * (hasSubs ? 0.44 : 0.54);
+    const mid = (s.a0 + s.a1) / 2;
+
+    const mainArt = state.art[sliceArtKey(s)];
+    const filled = showImg && o.artFill && mainArt && mainArt.src;
+
+    if (filled) {
+      const id = "fill" + (++uid);
+      const cp = el("clipPath", { id });
+      cp.appendChild(el("path", { d }));
+      defs.appendChild(cp);
+      const bb = sliceBBox(cx, cy, rO, rI, s.a0, s.a1);
+      gArt.appendChild(imageNode({
+        x: bb.x, y: bb.y, width: bb.w, height: bb.h,
+        preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#${id})`
+      }, mainArt.src));
+      gArt.appendChild(el("path", { d, fill: s.color, "fill-opacity": 0.34 }));
+    } else if (showImg) {
+      const ri = Math.min(band * (hasSubs ? 0.23 : 0.31), midR * Math.sin(span / 2) * 0.85, (rO - midR) * 0.92, rO * 0.17);
+      if (ri >= 11) addCirclePic(gArt, cx + midR * Math.cos(mid), cy + midR * Math.sin(mid), ri, mainArt, s.color, s.isOther ? "…" : initials(s.name));
+    }
+
+    // sub-archetype shares: banded shading + dividers, drawn above the art when it fills the slice
+    const subGeo = [];
+    if (hasSubs) {
+      const layer = filled ? gArt : gSlices;
+      let sa = s.a0, i = 0;
+      for (const sub of s.subList) {
+        const w = (sub.total / s.total) * span;
+        subGeo.push({ sub, mid: sa + w / 2, w });
+        const band2 = el("path", {
+          d: arcPath(cx, cy, rO, rI, sa, sa + w),
+          fill: filled ? s.color : (i % 2 ? "#000000" : "#FFFFFF"),
+          "fill-opacity": filled ? (i % 2 ? 0.22 : 0.03) : (i % 2 ? 0.10 : 0.05)
+        });
+        band2.appendChild(el("title", {}, `${sub.name} — ${sub.total} of ${s.name} (${Math.round(sub.total / s.total * 100)}%)`));
+        layer.appendChild(band2);
+        if (sa > s.a0 + 1e-4) layer.appendChild(el("line", {
+          x1: cx + (rI + band * 0.06) * Math.cos(sa), y1: cy + (rI + band * 0.06) * Math.sin(sa),
+          x2: cx + rO * Math.cos(sa), y2: cy + rO * Math.sin(sa),
+          stroke: T.bg, "stroke-width": filled ? 1.8 : 1, "stroke-opacity": filled ? .85 : .45
+        }));
+        sa += w; i++;
+      }
+    }
+    if (filled) gArt.appendChild(el("path", { d, fill: "none", stroke: T.bg, "stroke-width": o.gap, "stroke-linejoin": "round" }));
+    if (hasSubs && showImg) {
+      const subR = rI + band * 0.82;
+      for (const { sub, mid: m, w } of subGeo) {
+        const rb = Math.min(band * 0.14, subR * Math.sin(w / 2) * 0.82, (rO - subR) * 0.95, rO * 0.075);
+        if (rb < 8) continue;
+        addCirclePic(gArt, cx + subR * Math.cos(m), cy + subR * Math.sin(m), rb,
+          state.art[s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name)] || state.art[artKey(sub.name, "")],
+          s.color, initials(sub.name));
+      }
+    }
+  }
+
+  if (rI > band * 0.35) {
+    svg.appendChild(el("text", { x: cx, y: cy - 2, "text-anchor": "middle", fill: T.ink, "font-size": Math.round(rI * 0.42), "font-weight": 700 }, String(agg.grand)));
+    svg.appendChild(el("text", { x: cx, y: cy + Math.round(rI * 0.34), "text-anchor": "middle", fill: T.muted, "font-size": Math.round(rI * 0.19) }, "decks"));
+  }
+
+  /* --- labels --- */
+  const fmt = s => `${(s.pct * 100).toFixed(1)}%` + (o.counts ? ` · ${s.total}` : "");
+  if (o.labels === "inside") {
+    for (const s of slices) {
+      if (s.pct < 0.035) continue;
+      const mid = (s.a0 + s.a1) / 2;
+      const hasSubs = showSubs && s.subList.length > 0;
+      const midR = rI + band * (hasSubs ? 0.44 : 0.54);
+      let ri = showImg ? Math.min(band * (hasSubs ? 0.23 : 0.31), midR * Math.sin((s.a1 - s.a0) / 2) * 0.85, (rO - midR) * 0.92, rO * 0.17) : 0;
+      if (ri < 11) ri = 0;
+      const ly = cy + midR * Math.sin(mid) + (ri ? ri + 17 : 4);
+      const lx = cx + midR * Math.cos(mid);
+      const ink = readableOn(s.color);
+      const halo = { stroke: ink === "#FFFFFF" ? "rgba(0,0,0,.5)" : "rgba(255,255,255,.62)", "stroke-width": 3.2, "stroke-linejoin": "round", "paint-order": "stroke" };
+      gLabels.appendChild(el("text", Object.assign({ x: lx, y: ly, "text-anchor": "middle", fill: ink, "font-size": 15, "font-weight": 600 }, halo), fit(s.name, band * 1.5, 15)));
+      gLabels.appendChild(el("text", Object.assign({ x: lx, y: ly + 17, "text-anchor": "middle", fill: ink, "fill-opacity": .82, "font-size": 12.5 }, halo), fmt(s)));
+    }
+  } else if (o.labels === "outside") {
+    const sides = { 1: [], "-1": [] };
+    for (const s of slices) {
+      const mid = (s.a0 + s.a1) / 2;
+      const side = Math.cos(mid) >= 0 ? 1 : -1;
+      sides[side].push({ s, mid, side, y: cy + (rO + 24) * Math.sin(mid) });
+    }
+    const minGap = 42, hi = top + 6, lo = top + availH - 6;
+    for (const k of [1, -1]) {
+      const list = sides[k].sort((a, b) => a.y - b.y);
+      for (let i = 1; i < list.length; i++) if (list[i].y - list[i - 1].y < minGap) list[i].y = list[i - 1].y + minGap;
+      const overflow = list.length ? list[list.length - 1].y - lo : 0;
+      if (overflow > 0) for (let i = list.length - 1; i >= 0; i--) list[i].y = Math.min(list[i].y, lo - (list.length - 1 - i) * minGap);
+      for (let i = 0; i < list.length; i++) list[i].y = Math.max(list[i].y, hi + i * minGap);
+      for (const L of list) {
+        const { s, mid, side, y } = L;
+        const x0 = cx + (rO + 3) * Math.cos(mid), y0 = cy + (rO + 3) * Math.sin(mid);
+        const ex = cx + side * (rO + 26);
+        const tx = cx + side * (rO + 40);
+        const room = side > 0 ? (PAD + availW) - tx : tx - PAD;
+        gLabels.appendChild(el("polyline", {
+          points: `${x0},${y0} ${ex},${y} ${tx - side * 6},${y}`,
+          fill: "none", stroke: s.color, "stroke-width": 1.6, "stroke-opacity": .85, "stroke-linejoin": "round"
+        }));
+        gLabels.appendChild(el("circle", { cx: x0, cy: y0, r: 2.6, fill: s.color }));
+        gLabels.appendChild(el("text", { x: tx, y: y - 1, "text-anchor": side > 0 ? "start" : "end", fill: T.ink, "font-size": 16.5, "font-weight": 600 }, fit(s.name, room, 16.5)));
+        gLabels.appendChild(el("text", { x: tx, y: y + 17, "text-anchor": side > 0 ? "start" : "end", fill: T.muted, "font-size": 13 }, fmt(s)));
+      }
+    }
+  }
+
+  /* --- legend --- */
+  if (o.legend !== "none") {
+    const g = el("g"); svg.appendChild(g);
+    const entry = (x, y, s, w) => {
+      g.appendChild(el("rect", { x, y: y - 10, width: 13, height: 13, rx: 3.5, fill: s.color }));
+      const val = `${(s.pct * 100).toFixed(1)}%` + (o.counts ? `  ${s.total}` : "");
+      g.appendChild(el("text", { x: x + 21, y, fill: T.ink, "font-size": 14 }, fit(s.name, w - 96, 14)));
+      g.appendChild(el("text", { x: x + w - 4, y, fill: T.muted, "font-size": 12.5, "text-anchor": "end", "font-family": "ui-monospace, 'SF Mono', Menlo, monospace" }, val));
+      const subs = s.subList.map(v => v.name).join(", ");
+      if (showSubs && subs) g.appendChild(el("text", { x: x + 21, y: y + 14, fill: T.muted, "fill-opacity": .75, "font-size": 11 }, fit(subs, w - 40, 11)));
+    };
+    if (o.legend === "right") {
+      const x = W - LEG_W + 10, w = LEG_W - PAD - 6;
+      const anySub = showSubs && slices.some(s => s.subList.length);
+      const rowH = clamp((availH) / slices.length, 20, anySub ? 42 : 30);
+      let y = top + 12;
+      slices.forEach(s => { entry(x, y, s, w); y += rowH; });
+    } else {
+      const colW = (W - PAD * 2) / legendCols;
+      const y0 = H - PAD - legendH + 22;
+      slices.forEach((s, i) => {
+        const col = i % legendCols, row = Math.floor(i / legendCols);
+        entry(PAD + col * colW, y0 + row * 26, s, colW - 18);
+      });
+    }
+  }
+  return { svg, W, H };
+}
+
+/* ============================ art ============================ */
+const blobToDataURL = b => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
+
+function setArt(key, art) { if (art) state.art[key] = art; else delete state.art[key]; refresh(); }
+
+const CORS_NOTE = "That image is hosted somewhere that blocks copying. It shows in the preview, but PNG/JPG export will fail — download it and upload the file instead.";
+async function embedURL(key, url, quiet) {
+  try {
+    const r = await fetch(url, { mode: "cors" });
+    if (!r.ok) throw new Error(r.status);
+    setArt(key, { src: await blobToDataURL(await r.blob()), embedded: true });
+    if (!quiet) toast("Art added.", "good");
+    return "embedded";
+  } catch (e) {
+    setArt(key, { src: url, embedded: false });
+    if (!quiet) toast(CORS_NOTE, "bad", 8000);
+    return "linked";
+  }
+}
+async function fetchYgoArt(key, name, quiet) {
+  try {
+    const r = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=1&offset=0&archetype=" + encodeURIComponent(name));
+    if (!r.ok) throw new Error("no match");
+    const j = await r.json();
+    const c = j.data && j.data[0];
+    const url = c && c.card_images && c.card_images[0] && (c.card_images[0].image_url_cropped || c.card_images[0].image_url_small);
+    if (!url) throw new Error("no art");
+    return await embedURL(key, url, quiet);
+  } catch (e) {
+    if (!quiet) toast(`No YGOPRODeck art for “${name}”. Try a URL or upload a file.`, "bad");
+    return null;
+  }
+}
+
+/* one click, every archetype and sub-archetype */
+function progressToast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  return {
+    set: m => { t.textContent = m; },
+    close: (m, kind) => {
+      t.textContent = m; t.className = "toast " + (kind || "");
+      setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity .3s"; setTimeout(() => t.remove(), 320); }, 5000);
+    }
+  };
+}
+let fetchingAll = false;
+async function fetchAllArt() {
+  if (fetchingAll) return;
+  const targets = [], seen = new Set();
+  for (const s of lastAgg.slices) {
+    const push = (key, name) => { if (name && !state.art[key] && !seen.has(key)) { seen.add(key); targets.push({ key, name }); } };
+    if (!s.isOther) push(s.key, s.name);
+    for (const sub of s.subList) push(s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name), sub.name);
+  }
+  if (!targets.length) return toast(lastAgg.slices.length ? "Everything already has art." : "Load some results first.", lastAgg.slices.length ? "good" : "bad");
+
+  fetchingAll = true;
+  $("#btnFetchAll").disabled = true;
+  const p = progressToast(`Looking up art… 0 of ${targets.length}`);
+  let got = 0, linked = 0;
+  const missed = [];
+  for (let i = 0; i < targets.length; i++) {
+    const res = await fetchYgoArt(targets[i].key, targets[i].name, true);
+    if (res) { got++; if (res === "linked") linked++; } else missed.push(targets[i].name);
+    p.set(`Looking up art… ${i + 1} of ${targets.length}`);
+    await new Promise(r => setTimeout(r, 110));
+  }
+  fetchingAll = false;
+  $("#btnFetchAll").disabled = false;
+  refresh();
+  const tail = missed.length ? ` No match for ${missed.slice(0, 4).join(", ")}${missed.length > 4 ? ` and ${missed.length - 4} more` : ""} — set those by hand.` : "";
+  p.close(`Art found for ${got} of ${targets.length}.` + tail, got ? "good" : "bad");
+  if (linked) toast(CORS_NOTE, "bad", 9000);
+}
+
+let artMenu = null;
+function closeArtMenu() { if (artMenu) { artMenu.remove(); artMenu = null; } }
+document.addEventListener("click", e => { if (artMenu && !artMenu.contains(e.target) && !e.target.closest(".art")) closeArtMenu(); });
+
+function openArtMenu(anchor, key, name) {
+  closeArtMenu();
+  const m = document.createElement("div");
+  m.style.cssText = "position:absolute;z-index:50;background:var(--panel);border:1px solid var(--edge);border-radius:10px;padding:10px;box-shadow:var(--shadow);width:250px";
+  m.innerHTML = `<div style="font-weight:600;font-size:12.5px;margin-bottom:8px">${esc(name)}</div>
+    <button class="btn sm" data-a="upload" style="width:100%;margin-bottom:6px">Upload an image</button>
+    ${key === OTHER_KEY ? "" : '<button class="btn sm" data-a="ygo" style="width:100%;margin-bottom:8px">Get card art from YGOPRODeck</button>'}
+    <input type="url" placeholder="…or paste an image URL" data-a="url" style="margin-bottom:6px">
+    <div style="display:flex;gap:6px"><button class="btn sm" data-a="apply" style="flex:1">Use URL</button>
+    <button class="btn sm" data-a="clear">${key === OTHER_KEY ? "Reset" : "Clear"}</button></div>`;
+  document.body.appendChild(m);
+  const rect = anchor.getBoundingClientRect();
+  m.style.left = Math.min(rect.left + window.scrollX, window.innerWidth - 268) + "px";
+  m.style.top = rect.bottom + window.scrollY + 6 + "px";
+  artMenu = m;
+  m.addEventListener("click", async ev => {
+    const a = ev.target.dataset && ev.target.dataset.a;
+    if (!a) return;
+    if (a === "upload") {
+      const inp = $("#artInput");
+      inp.value = "";
+      inp.onchange = async () => { if (inp.files[0]) { setArt(key, { src: await blobToDataURL(inp.files[0]), embedded: true }); toast("Art added.", "good"); } };
+      inp.click(); closeArtMenu();
+    } else if (a === "ygo") { closeArtMenu(); toast("Looking up card art…"); fetchYgoArt(key, name); }
+    else if (a === "apply") { const u = $('[data-a="url"]', m).value.trim(); closeArtMenu(); if (u) embedURL(key, u); }
+    else if (a === "clear") { closeArtMenu(); setArt(key, key === OTHER_KEY ? DEFAULT_OTHER_ART() : null); }
+  });
+}
+
+/* ============================ UI rendering ============================ */
+let lastAgg = { slices: [], grand: 0 };
+
+function renderArchList(agg) {
+  const host = $("#archList");
+  host.innerHTML = "";
+  if (!agg.slices.length) {
+    host.innerHTML = `<p class="hint" style="margin:4px 0">Nothing loaded yet. Add results above and every archetype shows up here with its own colour and portrait.</p>`;
+    return;
+  }
+  for (const s of agg.slices) {
+    const wrap = document.createElement("div");
+    wrap.className = "arch" + (s.isOther ? " other" : "");
+    const aKey = sliceArtKey(s);
+    const art = state.art[aKey];
+    const pic = document.createElement("button");
+    pic.className = "art" + (art && !art.embedded ? " warn" : "");
+    pic.style.borderColor = s.color;
+    if (art) pic.style.backgroundImage = `url("${art.src}")`;
+    else pic.textContent = s.isOther ? "…" : initials(s.name);
+    pic.title = s.isOther ? "The card back — swap it for anything you like" : "Set art for " + s.name;
+    pic.addEventListener("click", e => { e.stopPropagation(); openArtMenu(pic, aKey, s.name); });
+
+    const mid = document.createElement("div");
+    mid.style.minWidth = "0";
+    mid.innerHTML = `<div class="arch-name">${esc(s.name)}</div><div class="arch-meta">${s.total} · ${(s.pct * 100).toFixed(1)}%</div>`;
+
+    const sw = document.createElement("label");
+    sw.className = "swatch";
+    sw.style.background = s.color;
+    sw.title = "Slice colour";
+    const ci = document.createElement("input");
+    ci.type = "color"; ci.value = s.color;
+    ci.addEventListener("input", () => { state.colors[s.key] = ci.value; sw.style.background = ci.value; scheduleRefresh(); });
+    sw.appendChild(ci);
+
+    wrap.append(pic, mid, sw);
+    if (s.subList.length) {
+      const subs = document.createElement("div");
+      subs.className = "arch-subs";
+      for (const sub of s.subList) {
+        const k = s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name);
+        const a2 = state.art[k];
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.innerHTML = `<i></i>${esc(sub.name)} <span style="color:var(--faint);font-family:var(--mono)">${sub.total}</span>`;
+        if (a2) $("i", chip).style.backgroundImage = `url("${a2.src}")`;
+        chip.addEventListener("click", e => { e.stopPropagation(); openArtMenu(chip, k, sub.name); });
+        subs.appendChild(chip);
+      }
+      wrap.appendChild(subs);
+    }
+    host.appendChild(wrap);
+  }
+}
+
+function scopeOverride() {
+  const sc = state.exportOpts.scope;
+  if (sc === "chart") return { legend: "none", labels: "none", title: "", subtitle: "" };
+  if (sc === "labels") return { legend: "none", labels: state.opts.labels === "none" ? "outside" : state.opts.labels };
+  return {};
+}
+function refresh() {
+  const agg = aggregate();
+  lastAgg = agg;
+  const { svg, W, H } = buildChart(agg, scopeOverride());
+  const host = $("#preview");
+  host.innerHTML = "";
+  host.appendChild(svg);
+  renderArchList(agg);
+  $("#statDecks").textContent = agg.grand.toLocaleString();
+  $("#statSlices").textContent = agg.slices.length;
+  $("#statOther").textContent = agg.otherCount ? `· ${agg.otherCount} archetypes folded into Other` : "";
+  $("#topCutHint").textContent = !state.opts.topCut ? ""
+    : state.hadPlacements ? `Using the placement column: only decks that finished in the top ${state.opts.topCut}.`
+    : `No placement column found, so this keeps the ${state.opts.topCut} most-played archetypes instead.`;
+  const w = state.exportOpts.width;
+  $("#exportDims").textContent = state.exportOpts.format === "image/svg+xml" ? `${W}×${H} vector` : `${w}×${Math.round(w * H / W)}`;
+}
+let rafId = null;
+function scheduleRefresh() { if (rafId) cancelAnimationFrame(rafId); rafId = requestAnimationFrame(() => { rafId = null; refresh(); }); }
+
+/* ============================ export ============================ */
+function serializeChart(transparent) {
+  const { svg, W, H } = buildChart(lastAgg, scopeOverride());
+  if (transparent) { const bg = $("#chart-bg", svg); if (bg) bg.remove(); }
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  return { text: '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg), W, H };
+}
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function slug(s) { return (s || "metaslice").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "metaslice"; }
+
+async function rasterize(type, quality) {
+  const { text, W, H } = serializeChart(state.exportOpts.transparent && type !== "image/jpeg");
+  const outW = clamp(state.exportOpts.width, 200, 8000), outH = Math.round(outW * H / W);
+  const url = URL.createObjectURL(new Blob([text], { type: "image/svg+xml;charset=utf-8" }));
+  const img = new Image();
+  img.decoding = "sync";
+  await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error("render")); img.src = url; });
+  const c = document.createElement("canvas");
+  c.width = outW; c.height = outH;
+  const ctx = c.getContext("2d");
+  if (!state.exportOpts.transparent || type === "image/jpeg") { ctx.fillStyle = themeColors().bg; ctx.fillRect(0, 0, outW, outH); }
+  ctx.drawImage(img, 0, 0, outW, outH);
+  URL.revokeObjectURL(url);
+  let blob = await new Promise(r => c.toBlob(r, type, quality));
+  let actual = type;
+  if (!blob || (blob.type && blob.type !== type)) {
+    const fallback = type === "image/avif" ? "image/webp" : "image/png";
+    blob = await new Promise(r => c.toBlob(r, fallback, quality));
+    actual = blob ? blob.type : fallback;
+    toast(`This browser can't write ${type.split("/")[1].toUpperCase()} — saved as ${actual.split("/")[1].toUpperCase()} instead.`);
+  }
+  return { blob, actual, outW, outH };
+}
+function tainted() { return Object.values(state.art).some(a => a && !a.embedded); }
+
+async function doExport() {
+  if (!lastAgg.slices.length) return toast("Load some results first.", "bad");
+  const { format, quality } = state.exportOpts;
+  const name = slug(state.opts.title);
+  if (format === "image/svg+xml") {
+    const { text } = serializeChart(state.exportOpts.transparent);
+    download(new Blob([text], { type: "image/svg+xml" }), name + ".svg");
+    return toast("SVG saved.", "good");
+  }
+  try {
+    const { blob, actual, outW, outH } = await rasterize(format, quality / 100);
+    if (!blob) throw new Error("encode");
+    download(blob, name + "." + ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" }[actual] || "png"));
+    toast(`Saved ${outW}×${outH}.`, "good");
+  } catch (e) {
+    toast(tainted()
+      ? "Export blocked: one of the images comes from a site that won't allow copying. Upload those portraits as files, or export SVG."
+      : "Couldn't render the image: " + e.message, "bad", 8000);
+  }
+}
+async function doCopy() {
+  try {
+    const { blob } = await rasterize("image/png", 1);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    toast("Chart copied to the clipboard.", "good");
+  } catch (e) {
+    toast("Copying isn't available here — use Download instead.", "bad");
+  }
+}
+
+/* ============================ manual entry ============================ */
+function syncManualTable() {
+  const body = $("#manualBody");
+  body.innerHTML = "";
+  state.rows.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    const cell = (type, key, ph) => {
+      const td = document.createElement("td");
+      const inp = document.createElement("input");
+      inp.type = type; inp.placeholder = ph || "";
+      inp.value = row[key] === null || row[key] === undefined ? "" : row[key];
+      inp.addEventListener("input", () => {
+        row[key] = type === "number" ? (inp.value === "" ? (key === "count" ? 1 : null) : parseFloat(inp.value)) : inp.value;
+        if (key === "placement") state.hadPlacements = state.rows.some(r => Number.isFinite(r.placement));
+        scheduleRefresh();
+      });
+      td.appendChild(inp); return td;
+    };
+    tr.append(cell("text", "archetype", "Ryzeal"), cell("text", "sub", "Fiendsmith"), cell("number", "count", "1"), cell("number", "placement", "—"));
+    const td = document.createElement("td");
+    const x = document.createElement("button");
+    x.className = "x"; x.type = "button"; x.textContent = "×"; x.title = "Remove row";
+    x.addEventListener("click", () => { state.rows.splice(i, 1); syncManualTable(); refresh(); });
+    td.appendChild(x); tr.appendChild(td);
+    body.appendChild(tr);
+  });
+  if (!state.rows.length) body.innerHTML = `<tr><td colspan="5"><p class="hint" style="margin:2px">No rows yet — add one to start typing results.</p></td></tr>`;
+}
+
+/* ============================ sample ============================ */
+const SAMPLE = [["Ryzeal","Fiendsmith",9],["Ryzeal","Mitsurugi",4],["Maliss","Argostars",6],["Tenpai Dragon","",6],
+  ["Fiendsmith","Lightsworn",5],["White Forest","Azamina",4],["Mitsurugi","Yummy",3],["Snake-Eye","Fire King",3],
+  ["Voiceless Voice","",3],["Labrynth","",3],["Dragon Link","",2],["Centur-Ion","",2],["Gold Pride","",2],
+  ["Branded Despia","",2],["Blue-Eyes","",2],["Traptrix","",2],["Yubel","",2],["Runick Stun","",1],
+  ["Kashtira","",1],["Melodious","",1],["Salamangreat","",1]];
+function loadSample() {
+  const flat = [];
+  SAMPLE.forEach(([a, s, n]) => { for (let i = 0; i < n; i++) flat.push({ archetype: a, sub: s, count: 1, placement: null }); });
+  let seed = 7;
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let i = flat.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [flat[i], flat[j]] = [flat[j], flat[i]]; }
+  flat.forEach((r, i) => r.placement = i + 1);
+  state.opts.title = state.opts.title || "Regional Championship — sample event";
+  state.opts.subtitle = "";
+  $("#optTitle").value = state.opts.title;
+  applyRows(flat, "the sample event");
+}
+
+/* ============================ wiring ============================ */
+const on = (sel, ev, fn) => $(sel).addEventListener(ev, fn);
+
+function syncInputs() {
+  const o = state.opts, e = state.exportOpts;
+  $("#optTitle").value = o.title; $("#optSubtitle").value = o.subtitle;
+  $("#optTopCut").value = o.topCut; $("#optThreshold").value = o.threshold; $("#thresholdOut").textContent = o.threshold + "%";
+  $("#optLabels").value = o.labels; $("#optLegend").value = o.legend;
+  $("#optDonut").value = o.donut; $("#donutOut").textContent = o.donut + "%";
+  $("#optGap").value = o.gap; $("#gapOut").textContent = o.gap;
+  $("#optImages").checked = o.images; $("#optArtFill").checked = o.artFill; $("#optSubs").checked = o.subs;
+  $("#optCounts").checked = o.counts; $("#optSortAlpha").checked = o.sortAlpha;
+  $("#optFormat").value = e.format; $("#optWidth").value = e.width;
+  $("#optQuality").value = e.quality; $("#qualityOut").textContent = e.quality;
+  $("#optTransparent").checked = e.transparent;
+  $("#qualityField").hidden = !/jpeg|webp|avif/.test(e.format);
+  $$("#scopeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.scope === (e.scope || "full")));
+  $$("#sizePresets button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.w === e.width));
+  $("#optWidth").disabled = e.format === "image/svg+xml";
+}
+
+on("#optTitle", "input", e => { state.opts.title = e.target.value; scheduleRefresh(); });
+on("#optSubtitle", "input", e => { state.opts.subtitle = e.target.value; scheduleRefresh(); });
+on("#optTopCut", "change", e => { state.opts.topCut = +e.target.value; refresh(); });
+on("#optThreshold", "input", e => { state.opts.threshold = +e.target.value; $("#thresholdOut").textContent = e.target.value + "%"; scheduleRefresh(); });
+on("#optLabels", "change", e => { state.opts.labels = e.target.value; refresh(); });
+on("#optLegend", "change", e => { state.opts.legend = e.target.value; refresh(); });
+on("#optDonut", "input", e => { state.opts.donut = +e.target.value; $("#donutOut").textContent = e.target.value + "%"; scheduleRefresh(); });
+on("#optGap", "input", e => { state.opts.gap = +e.target.value; $("#gapOut").textContent = e.target.value; scheduleRefresh(); });
+["images", "artFill", "subs", "counts", "sortAlpha"].forEach(k => {
+  on("#opt" + k[0].toUpperCase() + k.slice(1), "change", e => { state.opts[k] = e.target.checked; refresh(); });
+});
+on("#optFormat", "change", e => { state.exportOpts.format = e.target.value; syncInputs(); refresh(); });
+on("#optWidth", "input", e => { state.exportOpts.width = clamp(+e.target.value || 1600, 200, 8000); refresh(); });
+on("#optQuality", "input", e => { state.exportOpts.quality = +e.target.value; $("#qualityOut").textContent = e.target.value; });
+on("#optTransparent", "change", e => { state.exportOpts.transparent = e.target.checked; });
+on("#scopeSeg", "click", e => {
+  const b = e.target.closest("button[data-scope]"); if (!b) return;
+  $$("#scopeSeg button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.exportOpts.scope = b.dataset.scope;
+  refresh();
+});
+on("#sizePresets", "click", e => {
+  const b = e.target.closest("button[data-w]"); if (!b) return;
+  $$("#sizePresets button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  state.exportOpts.width = +b.dataset.w; $("#optWidth").value = b.dataset.w; refresh();
+});
+on("#btnDownload", "click", doExport);
+on("#btnCopy", "click", doCopy);
+
+on("#srcTabs", "click", e => {
+  const b = e.target.closest("button[data-src]"); if (!b) return;
+  $$("#srcTabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $$("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.src);
+});
+on("#btnSample", "click", loadSample);
+on("#btnFetchAll", "click", fetchAllArt);
+on("#btnClearArt", "click", () => { state.art = { [OTHER_KEY]: DEFAULT_OTHER_ART() }; refresh(); toast("Art cleared.", "good"); });
+on("#btnParsePaste", "click", () => {
+  const t = $("#pasteBox").value.trim();
+  if (!t) return toast("Paste some rows first.", "bad");
+  let rows;
+  try { rows = /^[[{]/.test(t) ? rowsFromJSON(JSON.parse(t)) : rowsFromCells(splitDelimited(t, sniffDelimiter(t))); }
+  catch (err) { return toast("That doesn't look like CSV, TSV or JSON.", "bad"); }
+  rows.length ? applyRows(rows) : toast("No archetype rows found in that text.", "bad");
+});
+on("#btnAddRow", "click", () => { state.rows.push({ archetype: "", sub: "", count: 1, placement: null }); syncManualTable(); $$("#manualBody input")[state.rows.length * 4 - 4] && $$("#manualBody input")[state.rows.length * 4 - 4].focus(); });
+on("#btnClearRows", "click", () => { state.rows = []; state.hadPlacements = false; syncManualTable(); refresh(); });
+
+const drop = $("#drop"), fileInput = $("#fileInput");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener("change", () => { if (fileInput.files[0]) ingestFile(fileInput.files[0]); fileInput.value = ""; });
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) ingestFile(f); });
+
+on("#btnSaveConfig", "click", () => {
+  const data = { app: "metaslice", version: 1, opts: state.opts, exportOpts: state.exportOpts, colors: state.colors, art: Object.fromEntries(Object.entries(state.art).filter(([, v]) => v && !v.isDefault)), rows: state.rows };
+  download(new Blob([JSON.stringify(data)], { type: "application/json" }), slug(state.opts.title) + "-setup.json");
+  toast("Setup saved — colours, art and settings included.", "good");
+});
+on("#btnLoadConfig", "click", () => $("#configInput").click());
+$("#configInput").addEventListener("change", async () => {
+  const f = $("#configInput").files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.opts) Object.assign(state.opts, d.opts);
+    if (d.exportOpts) Object.assign(state.exportOpts, d.exportOpts);
+    if (d.colors) state.colors = d.colors;
+    if (d.art) state.art = d.art;
+    if (!state.art[OTHER_KEY]) state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
+    if (Array.isArray(d.rows) && d.rows.length) { state.rows = d.rows; state.hadPlacements = d.rows.some(r => Number.isFinite(r.placement)); }
+    state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
+syncInputs(); syncManualTable(); refresh();
+    toast("Setup restored.", "good");
+  } catch (e) { toast("That file isn't a Metaslice setup.", "bad"); }
+  $("#configInput").value = "";
+});
+
+on("#themeToggle", "click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  refresh();
+});
+if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) document.documentElement.dataset.theme = "light";
+
+syncInputs(); syncManualTable(); refresh();
+</script>
+</body>
+</html>

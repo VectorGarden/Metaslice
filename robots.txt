@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://metaslice.reizu.dev/sitemap.xml
