@@ -18,7 +18,7 @@ metaslice/
 ├── sitemap.xml
 ├── LICENSE                 MIT
 ├── .github/workflows/
-│   ├── deploy.yml          publishes to Pages on every push to main
+│   ├── deploy.yml          publishes to Pages on every push, then checks the site
 │   └── refresh-archetype-index.yml  rebuilds the fallback index monthly
 ├── data/
 │   └── archetype-art.js    one portrait URL per archetype, the offline fallback
@@ -165,6 +165,8 @@ git push -u origin main
 **3. Set the custom domain.** Same page, **Custom domain** → `metaslice.reizu.dev` → Save. GitHub verifies the DNS, which usually takes a minute or two but can take up to an hour. Once the check passes, tick **Enforce HTTPS** (the certificate is issued automatically).
 
 That's it. Every push to `main` republishes; you can also trigger a deploy by hand from the **Actions** tab.
+
+A deploy finishes by reading the site back and comparing it against what it uploaded, so a green run means the published site was checked rather than the upload merely accepted. If they don't match the run fails — see the [notes](#notes) for why that's worth doing.
 
 ### DNS
 
