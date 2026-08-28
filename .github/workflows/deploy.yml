@@ -8,6 +8,15 @@ on:
   # not start another workflow, so a refreshed index would otherwise sit in the
   # repository undeployed until something else was pushed.
   workflow_call:
+    inputs:
+      ref:
+        description: >-
+          Commit to publish. A caller that has just pushed must name it:
+          github.sha is fixed when the run starts, so it still points at the
+          commit that triggered the run and the new one would not be deployed.
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -28,6 +37,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
       - uses: actions/configure-pages@v6
       # No build step — the repository is the site. Still, a few things in it
       # are not: stage a copy without them rather than serving the whole repo.
