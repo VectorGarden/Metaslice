@@ -300,7 +300,7 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
           <button class="btn ghost" id="btnClearArt">Clear all art</button>
         </div>
         <label class="switch"><input type="checkbox" id="optArtProxy" checked> Fetch art that blocks direct copying through a proxy</label>
-        <p class="hint" style="margin-top:2px;margin-bottom:10px">YGOPRODeck's image host refuses direct reads, so those portraits go through <code>images.weserv.nl</code> — that's what lets them be embedded in a PNG. Switch it off to keep art lookups between you and YGOPRODeck alone; anything that can't be read directly is then linked instead, and raster export is refused while it's there. <b>Upload an image</b> never makes a request either way.</p>
+        <p class="hint" style="margin-top:2px;margin-bottom:10px">YGOPRODeck's image host refuses direct reads, so those portraits go through <code>images.weserv.nl</code>, falling back to <code>i0.wp.com</code> if it's unreachable — that's what lets them be embedded in a PNG. Switch it off to keep art lookups between you and YGOPRODeck alone; anything that can't be read directly is then linked instead, and raster export is refused while it's there. <b>Upload an image</b> never makes a request either way.</p>
         <div class="arch-list" id="archList"></div>
         <p class="hint"><b>Get all art</b> looks every archetype and sub-archetype up on YGOPRODeck in one pass and fills in whatever it finds. Click any portrait to set that one by hand instead — upload an image, paste a URL, or look it up on its own.</p>
       </div>
@@ -945,43 +945,78 @@ const blobToDataURL = b => new Promise((res, rej) => { const f = new FileReader(
 function setArt(key, art) { if (art) state.art[key] = art; else delete state.art[key]; refresh(); }
 
 const corsNote = () => state.artProxy
-  ? "That image's host won't allow copying and the proxy couldn't reach it either, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG."
+  ? "That image's host won't allow copying and no proxy could reach it either, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG."
   : "That image's host won't allow copying and the art proxy is switched off, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — switch the proxy on, or download the image and upload it as a file.";
 
 // Portraits have to be read as bytes to be inlined, and a host that serves no
-// CORS headers (YGOPRODeck's among them) won't allow that. images.weserv.nl
-// re-serves an image with the header set. It is only ever a fallback: a host
-// that allows the read directly is never sent anywhere, and because it is an
-// image proxy rather than a general one it can only ever hand back a
-// re-encoded image.
-const ART_PROXY = "https://images.weserv.nl/?url=";
-const proxied = url => ART_PROXY + encodeURIComponent(url);
-let usedProxy = 0;   // reported once per "Get all art" run
+// CORS headers (YGOPRODeck's among them) won't allow that. These re-serve an
+// image with the header set, and are tried in order until one answers. Both
+// are image CDNs rather than general proxies, so neither can hand back
+// anything but an image, and they run on unrelated infrastructure so one being
+// down does not take the other with it.
+//
+// wsrv.nl is deliberately not in this list: it is images.weserv.nl under a
+// second domain — same bytes, same service — so it would fail at the same
+// moment and buy nothing.
+const ART_PROXIES = [
+  { host: "images.weserv.nl", url: u => "https://images.weserv.nl/?url=" + encodeURIComponent(u) },
+  // Photon wants the source without its scheme, and ssl=1 to fetch over https.
+  { host: "i0.wp.com", url: u => "https://i0.wp.com/" + u.replace(/^https?:\/\//, "") + (u.includes("?") ? "&" : "?") + "ssl=1" }
+];
+const PROXY_TIMEOUT = 8000;
+let usedProxy = 0, proxyHosts = new Set();   // reported once per "Get all art" run
+// A proxy that just timed out is not going to answer for the next portrait
+// either. Without this, one unreachable proxy costs the timeout on every
+// single item — minutes across a full run — instead of once.
+//
+// Only a timeout counts. Anything that fails fast costs nothing to retry, and
+// cannot be told apart from a proxy that simply has no copy of this one image:
+// Photon serves its 404 without CORS headers, so a missing portrait reaches us
+// as the same TypeError a dead host would. Treating that as an outage would
+// take the proxy out of service for the rest of a run over one absent image.
+let downProxies = new Set();
+const looksDown = e => e && e.name === "AbortError";
+
+// A proxy that has fallen over often hangs rather than refusing, and a hang
+// with no deadline would stall a whole Get all art run instead of moving on to
+// the next proxy — which is the entire point of having one.
+function deadline(ms) {
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
 
 async function fetchImageBlob(url, mustBeImage) {
-  const r = await fetch(url, { mode: "cors" });
+  const r = await fetch(url, { mode: "cors", signal: deadline(PROXY_TIMEOUT) });
   if (!r.ok) throw new Error(r.status);
   const b = await r.blob();
-  // Only enforced on the proxy, whose error pages are text — the direct path
+  // Only enforced on the proxies, whose error pages are text — the direct path
   // stays lenient so hosts that mislabel images keep working as they did.
   if (mustBeImage && !/^image\//i.test(b.type)) throw new Error("not an image");
   return b;
 }
 
 async function embedURL(key, url, quiet) {
-  let blob = null, viaProxy = false;
+  let blob = null, via = null;
   try {
     blob = await fetchImageBlob(url, false);
   } catch (direct) {
     if (state.artProxy && /^https?:/i.test(url)) {
-      try { blob = await fetchImageBlob(proxied(url), true); viaProxy = true; }
-      catch (throughProxy) { /* fall through to linking */ }
+      for (const proxy of ART_PROXIES) {
+        if (downProxies.has(proxy.host)) continue;
+        try { blob = await fetchImageBlob(proxy.url(url), true); via = proxy.host; break; }
+        catch (throughProxy) {
+          // A refusal about this one image says nothing about the proxy; a
+          // timeout, a dead connection or a 5xx says it is out of service.
+          if (looksDown(throughProxy)) downProxies.add(proxy.host);
+        }
+      }
     }
   }
   if (blob) {
-    if (viaProxy) usedProxy++;
+    if (via) { usedProxy++; proxyHosts.add(via); }
     setArt(key, { src: await blobToDataURL(blob), embedded: true });
-    if (!quiet) toast(viaProxy ? "Art added, fetched through the images.weserv.nl proxy." : "Art added.", "good");
+    if (!quiet) toast(via ? `Art added, fetched through the ${via} proxy.` : "Art added.", "good");
     return "embedded";
   }
   setArt(key, { src: url, embedded: false });
@@ -1031,7 +1066,7 @@ async function fetchAllArt() {
   fetchingAll = true;
   $("#btnFetchAll").disabled = true;
   const p = progressToast(`Looking up art… 0 of ${targets.length}`);
-  usedProxy = 0;
+  usedProxy = 0; proxyHosts = new Set(); downProxies = new Set();
   let got = 0, linked = 0;
   const missed = [];
   for (let i = 0; i < targets.length; i++) {
@@ -1047,7 +1082,7 @@ async function fetchAllArt() {
   p.close(`Art found for ${got} of ${targets.length}.` + tail, got ? "good" : "bad");
   // Say it plainly once per run: the art host refused the read, so those
   // portraits came through a third party rather than straight from the source.
-  if (usedProxy) toast(`${usedProxy} of those wouldn't allow a direct read, so they came through the images.weserv.nl proxy.`, "", 7000);
+  if (usedProxy) toast(`${usedProxy} of those wouldn't allow a direct read, so they came through ${[...proxyHosts].join(" and ")}.`, "", 7000);
   if (linked) toast(corsNote(), "bad", 9000);
 }
 
