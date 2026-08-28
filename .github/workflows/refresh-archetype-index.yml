@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.regen.outputs.changed }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
       - uses: actions/checkout@v7
 
@@ -35,12 +36,14 @@ jobs:
           fi
 
       - name: Commit
+        id: commit
         if: steps.regen.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Refresh archetype index" -- data/archetype-art.js
           git push
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   # Deploy explicitly, because the commit above cannot trigger it on its own.
   deploy:
@@ -51,3 +54,5 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.refresh.outputs.sha }}
