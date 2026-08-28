@@ -60,7 +60,7 @@ Or click any portrait in the **Slices** panel to set that one on its own. Three 
 
 For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. If the host refuses cross-origin reads the portrait can only be linked: it still shows in the preview, but the row turns pink and raster export is refused rather than writing a file with a blank where the art should be — download that image and upload it as a file, or export SVG.
 
-YGOPRODeck's image host sends no CORS headers, so its bytes can't be read directly. When a direct read is refused the image is retried through **images.weserv.nl**, an image proxy that re-serves it with the header set — that's what lets *Get all art* produce a chart you can export as PNG. A host that allows the read is never sent anywhere; the proxy is only ever a fallback, and it only ever hands back a re-encoded image. It re-compresses, so a proxied portrait is slightly smaller and slightly softer than the original — upload the file by hand if you want it untouched.
+YGOPRODeck's image host sends no CORS headers, so its bytes can't be read directly. When a direct read is refused the image is retried through **images.weserv.nl**, and then through **i0.wp.com** if that one is unreachable — image proxies that re-serve it with the header set — that's what lets *Get all art* produce a chart you can export as PNG. A host that allows the read is never sent anywhere; the proxy is only ever a fallback, and it only ever hands back a re-encoded image. It re-compresses, so a proxied portrait is slightly smaller and slightly softer than the original — upload the file by hand if you want it untouched.
 
 If the proxy can't reach the image either, the portrait falls back to a plain link: it still shows in the preview, but raster export is refused until you upload that one as a file.
 
@@ -148,6 +148,7 @@ Your results never leave the tab: files you load, the rows you type, colours and
 | --- | --- |
 | `db.ygoprodeck.com` | the archetype lookup behind **Get all art** and **Get card art** — it sees the archetype name |
 | `images.weserv.nl` | the fallback that fetches a portrait whose host refuses a direct read — it sees the image URL, and can be switched off in **Slices** |
+| `i0.wp.com` | only if weserv is unreachable — same job, same thing seen, same switch |
 
 Neither sees your tournament results. If you'd rather nothing left the tab at all, set portraits with **Upload an image**, which never makes a request.
 
