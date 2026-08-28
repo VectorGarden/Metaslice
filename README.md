@@ -17,6 +17,8 @@ metaslice/
 ├── robots.txt
 ├── sitemap.xml
 ├── LICENSE                 MIT
+├── .github/workflows/
+│   └── deploy.yml          publishes to Pages on every push to main
 ├── assets/
 │   ├── icon.svg            source icon (also the in-app logo)
 │   ├── favicon.ico         multi-size 16→256 for hosting
@@ -108,11 +110,11 @@ git remote add origin git@github.com:<you>/metaslice.git
 git push -u origin main
 ```
 
-**2. Turn on Pages.** Repo → **Settings** → **Pages** → **Build and deployment** → Source: **Deploy from a branch**, branch `main`, folder `/ (root)`. There's no build step, so GitHub serves the files as they are — nothing else to configure.
+**2. Turn on Pages.** Repo → **Settings** → **Pages** → **Build and deployment** → Source: **GitHub Actions**. Don't pick "Deploy from a branch" — the workflow in `.github/workflows/` handles it. There's still no build step; the workflow just uploads the repository as-is and publishes it.
 
 **3. Set the custom domain.** Same page, **Custom domain** → `metaslice.reizu.dev` → Save. GitHub verifies the DNS, which usually takes a minute or two but can take up to an hour. Once the check passes, tick **Enforce HTTPS** (the certificate is issued automatically).
 
-That's it. Every push to `main` republishes.
+That's it. Every push to `main` republishes; you can also trigger a deploy by hand from the **Actions** tab.
 
 ### DNS
 
@@ -126,7 +128,7 @@ The value is your **user** Pages host (`<you>.github.io`), not the repo name —
 
 ### Notes
 
-- Pages runs the files through Jekyll on the way out. That's harmless here: nothing is named with a leading underscore, and neither `index.html` nor `404.html` contains Liquid syntax for it to touch. A `.nojekyll` file would skip the pass, but there's nothing for it to protect.
+- Nothing is run over the files on the way out — the workflow uploads them and Pages serves them verbatim, so there's no Jekyll pass and no need for a `.nojekyll`. The upload leaves out dot-prefixed files and always excludes `.github`, so the workflow itself isn't served. `CNAME` has no leading dot, so it ships with every deploy and the custom domain sticks.
 - The social card at `assets/og-image.png` is referenced with absolute URLs in the `<head>`, since Discord, X, Slack and friends won't resolve relative ones. If you move the site to a different domain, update the `og:`/`twitter:` tags, `canonical`, `CNAME`, `sitemap.xml` and `robots.txt` — the domain appears in those five places and nowhere else.
 - The `samples/` folder ships with the site so you can link people straight at an example file. Delete it if you'd rather not serve it.
 
