@@ -1023,19 +1023,64 @@ async function embedURL(key, url, quiet) {
   if (!quiet) toast(corsNote(), "bad", 8000);
   return "linked";
 }
+// One portrait URL per archetype, built by tools/build-archetype-index.py. It
+// is the answer to the lookup, not to the download — the image itself is still
+// fetched, through the proxies above if its host will not allow a direct read.
+//
+// Pulled in only when the live lookup cannot be reached, so nobody pays the
+// 50 KB for a feature they never hit. Loaded as a script rather than fetched
+// as JSON so it also resolves from file://, where fetch of a sibling file is
+// refused.
+let archetypeIndex = null;   // null = not loaded, {} = tried and unavailable
+let usedIndex = 0;
+function loadArchetypeIndex() {
+  if (archetypeIndex) return Promise.resolve(archetypeIndex);
+  if (window.ARCHETYPE_ART) return Promise.resolve((archetypeIndex = window.ARCHETYPE_ART));
+  return new Promise(res => {
+    const s = document.createElement("script");
+    s.src = "data/archetype-art.js";
+    s.onload = () => res(archetypeIndex = window.ARCHETYPE_ART || {});
+    s.onerror = () => res(archetypeIndex = {});
+    document.head.appendChild(s);
+  });
+}
+// Archetype names are matched the way the rest of the app matches them, so a
+// difference in case or spacing does not miss.
+async function artFromIndex(name) {
+  const idx = await loadArchetypeIndex();
+  if (idx[name]) return idx[name];
+  const want = keyOf(name);
+  for (const k in idx) if (keyOf(k) === want) return idx[k];
+  return null;
+}
+
 async function fetchYgoArt(key, name, quiet) {
+  let url = null, answered = false;
   try {
-    const r = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=1&offset=0&archetype=" + encodeURIComponent(name));
-    if (!r.ok) throw new Error("no match");
-    const j = await r.json();
-    const c = j.data && j.data[0];
-    const url = c && c.card_images && c.card_images[0] && (c.card_images[0].image_url_cropped || c.card_images[0].image_url_small);
-    if (!url) throw new Error("no art");
-    return await embedURL(key, url, quiet);
-  } catch (e) {
+    const r = await fetch("https://db.ygoprodeck.com/api/v7/cardinfo.php?num=1&offset=0&archetype=" + encodeURIComponent(name),
+      { signal: deadline(PROXY_TIMEOUT) });
+    // A 400 here means the archetype is unknown, which the index cannot fix —
+    // it is built from this same source. Only a server that never really
+    // answered leaves the index with something to say.
+    answered = r.status < 500;
+    if (r.ok) {
+      const j = await r.json();
+      const c = j.data && j.data[0];
+      url = c && c.card_images && c.card_images[0] && (c.card_images[0].image_url_cropped || c.card_images[0].image_url_small);
+    }
+  } catch (e) { /* timed out or never connected */ }
+
+  let fromIndex = false;
+  if (!url && !answered) {
+    url = await artFromIndex(name);
+    fromIndex = !!url;
+  }
+  if (!url) {
     if (!quiet) toast(`No YGOPRODeck art for “${name}”. Try a URL or upload a file.`, "bad");
     return null;
   }
+  if (fromIndex) usedIndex++;
+  return await embedURL(key, url, quiet);
 }
 
 /* one click, every archetype and sub-archetype */
@@ -1066,7 +1111,7 @@ async function fetchAllArt() {
   fetchingAll = true;
   $("#btnFetchAll").disabled = true;
   const p = progressToast(`Looking up art… 0 of ${targets.length}`);
-  usedProxy = 0; proxyHosts = new Set(); downProxies = new Set();
+  usedProxy = 0; proxyHosts = new Set(); downProxies = new Set(); usedIndex = 0;
   let got = 0, linked = 0;
   const missed = [];
   for (let i = 0; i < targets.length; i++) {
@@ -1082,6 +1127,7 @@ async function fetchAllArt() {
   p.close(`Art found for ${got} of ${targets.length}.` + tail, got ? "good" : "bad");
   // Say it plainly once per run: the art host refused the read, so those
   // portraits came through a third party rather than straight from the source.
+  if (usedIndex) toast(`YGOPRODeck didn't answer, so ${usedIndex} of those came from the built-in archetype list — it was current on ${window.ARCHETYPE_ART_GENERATED || "an earlier date"}, so anything printed since won't be in it.`, "", 9000);
   if (usedProxy) toast(`${usedProxy} of those wouldn't allow a direct read, so they came through ${[...proxyHosts].join(" and ")}.`, "", 7000);
   if (linked) toast(corsNote(), "bad", 9000);
 }

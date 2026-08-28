@@ -1,0 +1,53 @@
+name: Refresh archetype index
+
+# data/archetype-art.js is the offline fallback for the archetype lookup, and
+# it is a snapshot — roughly four new archetypes are printed a month, and a
+# tournament chart leans on recent ones, so left alone it decays where it is
+# needed most. Monthly keeps the gap to about a set's worth.
+on:
+  schedule:
+    - cron: "0 6 1 * *"   # 06:00 UTC on the 1st
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-archetype-index
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.regen.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: regen
+        name: Rebuild the index and see what moved
+        run: |
+          python3 tools/build-archetype-index.py
+          python3 tools/index-change-report.py
+          # Only the generated-on date moved, so leave the file alone.
+          if ! grep -q '^changed=true$' "$GITHUB_OUTPUT"; then
+            git checkout -- data/archetype-art.js
+          fi
+
+      - name: Commit
+        if: steps.regen.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh archetype index" -- data/archetype-art.js
+          git push
+
+  # Deploy explicitly, because the commit above cannot trigger it on its own.
+  deploy:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml

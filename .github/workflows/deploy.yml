@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Called by refresh-archetype-index.yml. A push made with GITHUB_TOKEN does
+  # not start another workflow, so a refreshed index would otherwise sit in the
+  # repository undeployed until something else was pushed.
+  workflow_call:
 
 permissions:
   contents: read
