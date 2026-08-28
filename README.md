@@ -60,7 +60,9 @@ Or click any portrait in the **Slices** panel to set that one on its own. Three 
 
 For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. If the host refuses cross-origin reads the portrait can only be linked: it still shows in the preview, but the row turns pink and raster export is refused rather than writing a file with a blank where the art should be — download that image and upload it as a file, or export SVG.
 
-YGOPRODeck's image host currently sends no CORS headers, so art pulled from there is linked rather than inlined. Lookups still work and the chart still looks right on screen; it's PNG, JPG, WEBP and AVIF that will turn the export down until you upload those portraits as files. **Upload an image** is unaffected and always exports.
+YGOPRODeck's image host sends no CORS headers, so its bytes can't be read directly. When a direct read is refused the image is retried through **images.weserv.nl**, an image proxy that re-serves it with the header set — that's what lets *Get all art* produce a chart you can export as PNG. A host that allows the read is never sent anywhere; the proxy is only ever a fallback, and it only ever hands back a re-encoded image. It re-compresses, so a proxied portrait is slightly smaller and slightly softer than the original — upload the file by hand if you want it untouched.
+
+If the proxy can't reach the image either, the portrait falls back to a plain link: it still shows in the preview, but raster export is refused until you upload that one as a file.
 
 Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *Fiendsmith Ryzeal* bubble are set separately. **Save setup** writes colours, portraits, settings and rows to a JSON file — reload it next event and you keep your whole art library.
 
@@ -88,7 +90,7 @@ PNG, JPG, WEBP, AVIF, or SVG. Set any width from 200 to 8000 px; height follows 
 
 AVIF and WEBP encoding depends on the browser. If yours can't write the format you picked, the file is saved as the next best one and a note tells you which.
 
-SVG export is fully vector, with portraits embedded so the file stands on its own — except for any portrait that could only be linked, which is referenced by URL and needs a connection to show. The other caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
+SVG export is fully vector, with portraits embedded so the file stands on its own — except for any portrait that could only be linked, which is referenced by URL and needs a connection to show. Embedding is what makes those files big: a chart with art on every slice runs to a few megabytes of SVG, against a few hundred kilobytes of PNG. The other caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
 
 ## Icon
 
@@ -136,7 +138,16 @@ The value is your **user** Pages host (`<you>.github.io`), not the repo name —
 
 ## Any other host
 
-It's all static files — Netlify, Cloudflare Pages, S3, or a folder on a NAS all work with zero changes. Nothing is uploaded anywhere at runtime: results, art and setups stay in the tab.
+It's all static files — Netlify, Cloudflare Pages, S3, or a folder on a NAS all work with zero changes.
+
+Your results never leave the tab: files you load, the rows you type, colours and saved setups are all held in memory and written straight back to your own disk. Two features do reach out, both only when you ask for art:
+
+| | |
+| --- | --- |
+| `db.ygoprodeck.com` | the archetype lookup behind **Get all art** and **Get card art** — it sees the archetype name |
+| `images.weserv.nl` | the fallback that fetches a portrait whose host refuses a direct read — it sees the image URL |
+
+Neither sees your tournament results. If you'd rather nothing left the tab at all, set portraits with **Upload an image**, which never makes a request.
 
 ## Sample data
 
