@@ -382,7 +382,7 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
   <section class="stage">
     <div class="stage-inner">
       <div class="canvas-card"><div id="preview"></div></div>
-      <div class="stage-bar">
+      <div class="stage-bar" aria-live="polite">
         <span class="stat"><b id="statDecks">0</b> decks</span>
         <span class="stat">·</span>
         <span class="stat"><b id="statSlices">0</b> slices</span>
@@ -499,18 +499,35 @@ function sniffDelimiter(text) {
   const [best, hits] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
   return hits ? best : ",";
 }
-const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return Number.isFinite(n) ? n : null; };
+// Take the first number rather than deleting every non-digit: stripping turns
+// a date like 1/15/26 into 11526, which then reads as eleven thousand decks.
+// Thousands separators still survive, and "13 decks", "#13" and "2nd" still work.
+const num = v => {
+  const m = String(v).match(/-?\d[\d,]*\.?\d*/);
+  if (!m) return null;
+  const n = parseFloat(m[0].replace(/,/g, ""));
+  return Number.isFinite(n) ? n : null;
+};
 
-function rowsFromCells(cells) {
-  if (!cells.length) return [];
-  const map = {}; let headerIdx = -1;
+// The row that names the columns, if there is one. Reports rather than parses,
+// so a workbook can be asked which of its sheets actually holds results.
+function findHeader(cells) {
   for (let i = 0; i < Math.min(12, cells.length); i++) {
     const roles = cells[i].map(headerRole);
     if (roles.filter(Boolean).length >= 1 && roles.some(r => r === "archetype" || r === "count" || r === "placement")) {
+      const map = {};
       roles.forEach((r, j) => { if (r && !(r in map)) map[r] = j; });
-      headerIdx = i; break;
+      return { idx: i, map };
     }
   }
+  return null;
+}
+
+function rowsFromCells(cells) {
+  if (!cells.length) return [];
+  const found = findHeader(cells);
+  const map = found ? found.map : {};
+  const headerIdx = found ? found.idx : -1;
   const body = cells.slice(headerIdx + 1);
   if (headerIdx === -1) { // positional fallback
     map.archetype = 0;
@@ -564,8 +581,19 @@ async function readXLSX(file) {
   }
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  return rowsFromCells(XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" }));
+  const cellsOf = name => XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: "" });
+  // The first sheet is often a cover or summary page, and one of those parses
+  // happily into nonsense archetypes named after its own title lines. Prefer a
+  // sheet whose columns are named; only fall back to position if none are.
+  for (const name of wb.SheetNames) {
+    const cells = cellsOf(name);
+    if (findHeader(cells)) return rowsFromCells(cells);
+  }
+  for (const name of wb.SheetNames) {
+    const rows = rowsFromCells(cellsOf(name));
+    if (rows.length) return rows;
+  }
+  return [];
 }
 async function ingestFile(file) {
   const name = (file.name || "").toLowerCase();
@@ -1154,8 +1182,17 @@ async function fetchAllArt() {
   if (linked) toast(corsNote(), "bad", 9000);
 }
 
-let artMenu = null;
-function closeArtMenu() { if (artMenu) { artMenu.remove(); artMenu = null; } }
+let artMenu = null, artMenuOpener = null;
+function closeArtMenu(restoreFocus) {
+  if (!artMenu) return;
+  artMenu.remove(); artMenu = null;
+  // The menu lives at the end of <body>, so without this a keyboard user is
+  // dropped back at the top of the tab order instead of the portrait they came
+  // from.
+  if (restoreFocus && artMenuOpener && artMenuOpener.isConnected) artMenuOpener.focus();
+  artMenuOpener = null;
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && artMenu) { e.preventDefault(); closeArtMenu(true); } });
 document.addEventListener("click", e => { if (artMenu && !artMenu.contains(e.target) && !e.target.closest(".art")) closeArtMenu(); });
 
 function openArtMenu(anchor, key, name) {
@@ -1169,6 +1206,18 @@ function openArtMenu(anchor, key, name) {
     <div style="display:flex;gap:6px"><button class="btn sm" data-a="apply" style="flex:1">Use URL</button>
     <button class="btn sm" data-a="clear">${key === OTHER_KEY ? "Reset" : "Clear"}</button></div>`;
   document.body.appendChild(m);
+  artMenuOpener = anchor;
+  // Tab order follows the DOM, and this is appended last, so focus has to be
+  // moved in deliberately or the menu cannot be reached from the keyboard.
+  const first = $("button", m);
+  if (first) first.focus();
+  m.addEventListener("keydown", ev => {
+    if (ev.key !== "Tab") return;
+    const items = $$("button, input", m);
+    if (!items.length) return;
+    const edge = ev.shiftKey ? items[0] : items[items.length - 1];
+    if (document.activeElement === edge) { ev.preventDefault(); (ev.shiftKey ? items[items.length - 1] : items[0]).focus(); }
+  });
   const rect = anchor.getBoundingClientRect();
   m.style.left = Math.min(rect.left + window.scrollX, window.innerWidth - 268) + "px";
   m.style.top = rect.bottom + window.scrollY + 6 + "px";
@@ -1180,10 +1229,10 @@ function openArtMenu(anchor, key, name) {
       const inp = $("#artInput");
       inp.value = "";
       inp.onchange = async () => { if (inp.files[0]) { setArt(key, { src: await blobToDataURL(inp.files[0]), embedded: true }); toast("Art added.", "good"); } };
-      inp.click(); closeArtMenu();
-    } else if (a === "ygo") { closeArtMenu(); toast("Looking up card art…"); fetchYgoArt(key, name); }
-    else if (a === "apply") { const u = $('[data-a="url"]', m).value.trim(); closeArtMenu(); if (u) embedURL(key, u); }
-    else if (a === "clear") { closeArtMenu(); setArt(key, key === OTHER_KEY ? DEFAULT_OTHER_ART() : null); }
+      inp.click(); closeArtMenu(true);
+    } else if (a === "ygo") { closeArtMenu(true); toast("Looking up card art…"); fetchYgoArt(key, name); }
+    else if (a === "apply") { const u = $('[data-a="url"]', m).value.trim(); closeArtMenu(true); if (u) embedURL(key, u); }
+    else if (a === "clear") { closeArtMenu(true); setArt(key, key === OTHER_KEY ? DEFAULT_OTHER_ART() : null); }
   });
 }
 
