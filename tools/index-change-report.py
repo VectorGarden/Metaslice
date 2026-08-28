@@ -18,7 +18,9 @@ import subprocess
 import sys
 
 INDEX = "data/archetype-art.js"
-PATTERN = re.compile(r"window\.ARCHETYPE_ART = (\{.*?\});", re.S)
+# Greedy: the object is the last thing in the file, and a non-greedy match
+# would stop at the first "};" if a value ever contained one.
+PATTERN = re.compile(r"window\.ARCHETYPE_ART = (\{.*\});", re.S)
 
 
 def archetypes(source):
