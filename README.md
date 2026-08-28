@@ -91,6 +91,12 @@ python3 tools/index-change-report.py   # optional: what moved, and whether it's 
 
 The generator reads the card dump from YGOPRODeck, keeps one image URL per archetype, and rewrites the file — commit the result. It refuses to write if it comes back with an implausibly small number of archetypes, so a bad response can't quietly empty the fallback. Nothing else in the repository is generated, and the site still needs no build step.
 
+The file is one archetype per line, sorted, so a refresh reads as a few added lines rather than one rewritten 50 KB line. The object is plain JSON wrapped in an assignment — it isn't a `.json` file because a script tag resolves from `file://` and `fetch` of a sibling file does not, and the app is meant to work when opened straight from disk. To get the JSON on its own:
+
+```bash
+sed '1,/^window.ARCHETYPE_ART = /d;$d' data/archetype-art.js
+```
+
 ## Chart controls
 
 - **Top cut** — 4 / 8 / 16 / 32 / 64. Uses the placement column when there is one; otherwise it keeps the N most-played archetypes and says so.
