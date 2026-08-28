@@ -157,7 +157,7 @@ The value is your **user** Pages host (`<you>.github.io`), not the repo name —
 
 ### Notes
 
-- Nothing is run over the files on the way out — the workflow uploads them and Pages serves them verbatim, so there's no Jekyll pass and no need for a `.nojekyll`. The upload leaves out dot-prefixed files and always excludes `.github`, so the workflow itself isn't served. `CNAME` has no leading dot, so it ships with every deploy and the custom domain sticks.
+- Nothing is run over the files on the way out — the workflow uploads them and Pages serves them verbatim, so there's no Jekyll pass and no need for a `.nojekyll`. It stages a copy of the repository first, minus `.git`, `.github` and `tools`, so only the site itself is published; anything you add ships by default. `CNAME` is deliberately kept, or the custom domain would be reset on the next deploy.
 - The social card at `assets/og-image.png` is referenced with absolute URLs in the `<head>`, since Discord, X, Slack and friends won't resolve relative ones. If you move the site to a different domain, update the `og:`/`twitter:` tags, `canonical`, `CNAME`, `sitemap.xml` and `robots.txt` — the domain appears in those five places and nowhere else.
 - The `samples/` folder ships with the site so you can link people straight at an example file. Delete it if you'd rather not serve it.
 
