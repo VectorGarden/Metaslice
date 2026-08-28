@@ -936,19 +936,47 @@ const blobToDataURL = b => new Promise((res, rej) => { const f = new FileReader(
 
 function setArt(key, art) { if (art) state.art[key] = art; else delete state.art[key]; refresh(); }
 
-const CORS_NOTE = "That image is hosted somewhere that won't allow copying, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG.";
+const CORS_NOTE = "That image's host won't allow copying and the proxy couldn't reach it either, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG.";
+
+// Portraits have to be read as bytes to be inlined, and a host that serves no
+// CORS headers (YGOPRODeck's among them) won't allow that. images.weserv.nl
+// re-serves an image with the header set. It is only ever a fallback: a host
+// that allows the read directly is never sent anywhere, and because it is an
+// image proxy rather than a general one it can only ever hand back a
+// re-encoded image.
+const ART_PROXY = "https://images.weserv.nl/?url=";
+const proxied = url => ART_PROXY + encodeURIComponent(url);
+let usedProxy = 0;   // reported once per "Get all art" run
+
+async function fetchImageBlob(url, mustBeImage) {
+  const r = await fetch(url, { mode: "cors" });
+  if (!r.ok) throw new Error(r.status);
+  const b = await r.blob();
+  // Only enforced on the proxy, whose error pages are text — the direct path
+  // stays lenient so hosts that mislabel images keep working as they did.
+  if (mustBeImage && !/^image\//i.test(b.type)) throw new Error("not an image");
+  return b;
+}
+
 async function embedURL(key, url, quiet) {
+  let blob = null, viaProxy = false;
   try {
-    const r = await fetch(url, { mode: "cors" });
-    if (!r.ok) throw new Error(r.status);
-    setArt(key, { src: await blobToDataURL(await r.blob()), embedded: true });
-    if (!quiet) toast("Art added.", "good");
-    return "embedded";
-  } catch (e) {
-    setArt(key, { src: url, embedded: false });
-    if (!quiet) toast(CORS_NOTE, "bad", 8000);
-    return "linked";
+    blob = await fetchImageBlob(url, false);
+  } catch (direct) {
+    if (/^https?:/i.test(url)) {
+      try { blob = await fetchImageBlob(proxied(url), true); viaProxy = true; }
+      catch (throughProxy) { /* fall through to linking */ }
+    }
   }
+  if (blob) {
+    if (viaProxy) usedProxy++;
+    setArt(key, { src: await blobToDataURL(blob), embedded: true });
+    if (!quiet) toast(viaProxy ? "Art added, fetched through the images.weserv.nl proxy." : "Art added.", "good");
+    return "embedded";
+  }
+  setArt(key, { src: url, embedded: false });
+  if (!quiet) toast(CORS_NOTE, "bad", 8000);
+  return "linked";
 }
 async function fetchYgoArt(key, name, quiet) {
   try {
@@ -993,6 +1021,7 @@ async function fetchAllArt() {
   fetchingAll = true;
   $("#btnFetchAll").disabled = true;
   const p = progressToast(`Looking up art… 0 of ${targets.length}`);
+  usedProxy = 0;
   let got = 0, linked = 0;
   const missed = [];
   for (let i = 0; i < targets.length; i++) {
@@ -1006,6 +1035,9 @@ async function fetchAllArt() {
   refresh();
   const tail = missed.length ? ` No match for ${missed.slice(0, 4).join(", ")}${missed.length > 4 ? ` and ${missed.length - 4} more` : ""} — set those by hand.` : "";
   p.close(`Art found for ${got} of ${targets.length}.` + tail, got ? "good" : "bad");
+  // Say it plainly once per run: the art host refused the read, so those
+  // portraits came through a third party rather than straight from the source.
+  if (usedProxy) toast(`${usedProxy} of those wouldn't allow a direct read, so they came through the images.weserv.nl proxy.`, "", 7000);
   if (linked) toast(CORS_NOTE, "bad", 9000);
 }
 
