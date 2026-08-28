@@ -64,7 +64,7 @@ Or click any portrait in the **Slices** panel to set that one on its own. Three 
 - **Get card art from YGOPRODeck** — looks up the archetype and grabs the cropped card art.
 - **Paste an image URL** — anything on the web.
 
-For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. That needs the host to allow a cross-origin read, and YGOPRODeck's image host sends no CORS headers — hence the fallbacks below.
+For the last two — and for anything named by an `image` column in your results file — the image is fetched and inlined as a data URL so exports stay self-contained. That needs the host to allow a cross-origin read, and YGOPRODeck's image host sends no CORS headers — hence the fallbacks below.
 
 ### When something is unreachable
 

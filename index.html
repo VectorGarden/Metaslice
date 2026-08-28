@@ -201,6 +201,9 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
 .toast.good{border-left-color:var(--teal)}
 @keyframes slide{from{opacity:0;transform:translateY(8px)}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+/* Below this the wordmark, which cannot wrap, runs under the header buttons.
+   The tagline is decorative, so it goes rather than the buttons moving. */
+@media (max-width:460px){ .wordmark span{display:none} }
 @media (max-width:980px){
   .app{grid-template-columns:1fr}
   .stage{order:-1}
@@ -443,6 +446,10 @@ const state = {
   colors: {},                  // key -> hex
   art: { [OTHER_KEY]: DEFAULT_OTHER_ART() },   // key -> {src, embedded}
   hadPlacements: false,
+  // Whether the subtitle is ours to overwrite. Once someone types their own it
+  // is theirs, but one we generated has to follow the data or a chart exports
+  // carrying the deck count of the file before it.
+  autoSubtitle: true,
   // Kept out of opts on purpose: this is the reader's own privacy preference,
   // so it lives in their browser and is never written into a shared setup file.
   artProxy: recall(PROXY_KEY) !== "off",
@@ -497,7 +504,7 @@ const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); re
 function rowsFromCells(cells) {
   if (!cells.length) return [];
   const map = {}; let headerIdx = -1;
-  for (let i = 0; i < Math.min(4, cells.length); i++) {
+  for (let i = 0; i < Math.min(12, cells.length); i++) {
     const roles = cells[i].map(headerRole);
     if (roles.filter(Boolean).length >= 1 && roles.some(r => r === "archetype" || r === "count" || r === "placement")) {
       roles.forEach((r, j) => { if (r && !(r in map)) map[r] = j; });
@@ -580,9 +587,24 @@ async function ingestFile(file) {
 function applyRows(rows, sourceName) {
   state.rows = rows;
   state.hadPlacements = rows.some(r => Number.isFinite(r.placement));
-  rows.forEach(r => { if (r.image) state.art[artKey(r.archetype, "")] = { src: r.image, embedded: false }; });
+  // Show what the file named straight away, then try to inline it the same way
+  // every other portrait is. Without this second step art from an image column
+  // stays linked, and a chart built from such a file cannot be exported as PNG
+  // even though the proxies would have had no trouble fetching it.
+  const named = new Set();
+  rows.forEach(r => {
+    if (!r.image || named.has(r.archetype)) return;
+    named.add(r.archetype);
+    const key = artKey(r.archetype, "");
+    state.art[key] = { src: r.image, embedded: false };
+    embedURL(key, r.image, true);
+  });
   const total = rows.reduce((s, r) => s + (r.count || 1), 0);
-  if (!state.opts.subtitle) { state.opts.subtitle = `${total.toLocaleString()} decks`; $("#optSubtitle").value = state.opts.subtitle; }
+  if (!state.opts.subtitle || state.autoSubtitle) {
+    state.opts.subtitle = `${total.toLocaleString()} decks`;
+    state.autoSubtitle = true;
+    $("#optSubtitle").value = state.opts.subtitle;
+  }
   syncManualTable(); refresh();
   toast(`Read ${rows.length} rows${sourceName ? " from " + sourceName : ""}.`, "good");
 }
@@ -1509,7 +1531,7 @@ function syncInputs() {
 }
 
 on("#optTitle", "input", e => { state.opts.title = e.target.value; scheduleRefresh(); });
-on("#optSubtitle", "input", e => { state.opts.subtitle = e.target.value; scheduleRefresh(); });
+on("#optSubtitle", "input", e => { state.opts.subtitle = e.target.value; state.autoSubtitle = false; scheduleRefresh(); });
 on("#optTopCut", "change", e => { state.opts.topCut = +e.target.value; refresh(); });
 on("#optThreshold", "input", e => { state.opts.threshold = +e.target.value; $("#thresholdOut").textContent = e.target.value + "%"; scheduleRefresh(); });
 on("#optLabels", "change", e => { state.opts.labels = e.target.value; refresh(); });
