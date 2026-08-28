@@ -58,7 +58,9 @@ Or click any portrait in the **Slices** panel to set that one on its own. Three 
 - **Get card art from YGOPRODeck** — looks up the archetype and grabs the cropped card art.
 - **Paste an image URL** — anything on the web.
 
-For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. If the host refuses cross-origin reads, the portrait still shows in the preview but the row turns pink and raster export will be blocked — download that image and upload it as a file, or export SVG.
+For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. If the host refuses cross-origin reads the portrait can only be linked: it still shows in the preview, but the row turns pink and raster export is refused rather than writing a file with a blank where the art should be — download that image and upload it as a file, or export SVG.
+
+YGOPRODeck's image host currently sends no CORS headers, so art pulled from there is linked rather than inlined. Lookups still work and the chart still looks right on screen; it's PNG, JPG, WEBP and AVIF that will turn the export down until you upload those portraits as files. **Upload an image** is unaffected and always exports.
 
 Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *Fiendsmith Ryzeal* bubble are set separately. **Save setup** writes colours, portraits, settings and rows to a JSON file — reload it next event and you keep your whole art library.
 
@@ -86,7 +88,7 @@ PNG, JPG, WEBP, AVIF, or SVG. Set any width from 200 to 8000 px; height follows 
 
 AVIF and WEBP encoding depends on the browser. If yours can't write the format you picked, the file is saved as the next best one and a note tells you which.
 
-SVG export is fully vector and self-contained, with portraits embedded — the one caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
+SVG export is fully vector, with portraits embedded so the file stands on its own — except for any portrait that could only be linked, which is referenced by URL and needs a connection to show. The other caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
 
 ## Icon
 

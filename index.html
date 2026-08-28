@@ -936,7 +936,7 @@ const blobToDataURL = b => new Promise((res, rej) => { const f = new FileReader(
 
 function setArt(key, art) { if (art) state.art[key] = art; else delete state.art[key]; refresh(); }
 
-const CORS_NOTE = "That image is hosted somewhere that blocks copying. It shows in the preview, but PNG/JPG export will fail — download it and upload the file instead.";
+const CORS_NOTE = "That image is hosted somewhere that won't allow copying, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG.";
 async function embedURL(key, url, quiet) {
   try {
     const r = await fetch(url, { mode: "cors" });
@@ -1199,7 +1199,42 @@ function serializeChart(transparent) {
   const { svg, W, H } = buildChart(lastAgg, scopeOverride());
   if (transparent) { const bg = $("#chart-bg", svg); if (bg) bg.remove(); }
   svg.setAttribute("width", W); svg.setAttribute("height", H);
-  return { text: '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg), W, H };
+  // Portraits that reached the chart as external URLs rather than inlined data.
+  // Reading them off the finished SVG accounts for every reason a portrait may
+  // not have been drawn — art switched off, a bubble too small to render — so
+  // this never reports one the file would not actually have been missing.
+  const linked = [...svg.querySelectorAll("image")]
+    .map(n => n.getAttribute("href") || "")
+    .filter(h => h && !/^data:/i.test(h));
+  return { text: '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg), W, H, linked };
+}
+
+// Name the archetypes behind a set of external portrait URLs, for the message.
+function namesForArt(hrefs) {
+  const owner = new Map();
+  for (const s of lastAgg.slices) {
+    owner.set(sliceArtKey(s), s.name);
+    for (const sub of s.subList) {
+      owner.set(s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name), sub.name);
+      if (!owner.has(artKey(sub.name, ""))) owner.set(artKey(sub.name, ""), sub.name);
+    }
+  }
+  const out = [];
+  for (const h of new Set(hrefs)) {
+    for (const k in state.art) {
+      const a = state.art[k];
+      if (a && a.src === h) { const n = owner.get(k); if (n && !out.includes(n)) out.push(n); break; }
+    }
+  }
+  return out;
+}
+const uploadHint = n => n === 1
+  ? "Download that image and upload it as a file"
+  : "Download those images and upload them as files";
+function listNames(names, max = 3) {
+  if (!names.length) return "one of the portraits";
+  const head = names.slice(0, max).join(", ");
+  return names.length > max ? `${head} and ${names.length - max} more` : head;
 }
 function download(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -1207,10 +1242,17 @@ function download(blob, filename) {
   a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
+const FORMAT_LABEL = { "image/png": "PNG", "image/jpeg": "JPG", "image/webp": "WEBP", "image/avif": "AVIF", "image/svg+xml": "SVG" };
+const label = t => FORMAT_LABEL[t] || String(t).split("/")[1].toUpperCase();
 function slug(s) { return (s || "metaslice").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "metaslice"; }
 
 async function rasterize(type, quality) {
-  const { text, W, H } = serializeChart(state.exportOpts.transparent && type !== "image/jpeg");
+  const { text, W, H, linked } = serializeChart(state.exportOpts.transparent && type !== "image/jpeg");
+  // An SVG rendered into <img> refuses to load external references, so a linked
+  // portrait would come out blank. The canvas is never tainted by an image that
+  // never loaded, so nothing downstream would have caught this — stop here
+  // instead of encoding a file with silent holes in it.
+  if (linked.length) { const e = new Error("linked-art"); e.code = "linked-art"; e.names = namesForArt(linked); throw e; }
   const outW = clamp(state.exportOpts.width, 200, 8000), outH = Math.round(outW * H / W);
   const url = URL.createObjectURL(new Blob([text], { type: "image/svg+xml;charset=utf-8" }));
   const img = new Image();
@@ -1228,20 +1270,20 @@ async function rasterize(type, quality) {
     const fallback = type === "image/avif" ? "image/webp" : "image/png";
     blob = await new Promise(r => c.toBlob(r, fallback, quality));
     actual = blob ? blob.type : fallback;
-    toast(`This browser can't write ${type.split("/")[1].toUpperCase()} — saved as ${actual.split("/")[1].toUpperCase()} instead.`);
+    toast(`This browser can't write ${label(type)} — saved as ${label(actual)} instead.`);
   }
   return { blob, actual, outW, outH };
 }
-function tainted() { return Object.values(state.art).some(a => a && !a.embedded); }
-
 async function doExport() {
   if (!lastAgg.slices.length) return toast("Load some results first.", "bad");
   const { format, quality } = state.exportOpts;
   const name = slug(state.opts.title);
   if (format === "image/svg+xml") {
-    const { text } = serializeChart(state.exportOpts.transparent);
+    const { text, linked } = serializeChart(state.exportOpts.transparent);
     download(new Blob([text], { type: "image/svg+xml" }), name + ".svg");
-    return toast("SVG saved.", "good");
+    return linked.length
+      ? toast(`SVG saved. The art for ${listNames(namesForArt(linked))} is linked rather than embedded, so the file needs a connection to show it.`, "", 7000)
+      : toast("SVG saved.", "good");
   }
   try {
     const { blob, actual, outW, outH } = await rasterize(format, quality / 100);
@@ -1249,19 +1291,27 @@ async function doExport() {
     download(blob, name + "." + ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" }[actual] || "png"));
     toast(`Saved ${outW}×${outH}.`, "good");
   } catch (e) {
-    toast(tainted()
-      ? "Export blocked: one of the images comes from a site that won't allow copying. Upload those portraits as files, or export SVG."
-      : "Couldn't render the image: " + e.message, "bad", 8000);
+    toast(e && e.code === "linked-art"
+      ? `Can't write ${label(format)} — the art for ${listNames(e.names)} comes from a site that won't allow copying, so it would come out blank. ${uploadHint(e.names.length)}, or export SVG.`
+      : "Couldn't render the image: " + e.message, "bad", 9000);
   }
 }
 async function doCopy() {
+  // Safari only honours a write that is constructed synchronously in the click,
+  // so hand ClipboardItem the pending blob rather than awaiting it first.
+  const pending = rasterize("image/png", 1).then(r => r.blob);
+  pending.catch(() => {});   // handled below; don't trip unhandled-rejection
   try {
-    // Safari only honours a write that is constructed synchronously in the click,
-    // so hand ClipboardItem the pending blob rather than awaiting it first.
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": rasterize("image/png", 1).then(r => r.blob) })]);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": pending })]);
     toast("Chart copied to the clipboard.", "good");
-  } catch (e) {
-    toast("Copying isn't available here — use Download instead.", "bad");
+  } catch (err) {
+    // clipboard.write reports its own failure, which hides why the blob never
+    // arrived — reach back for the original reason.
+    let e = err;
+    try { await pending; } catch (cause) { e = cause; }
+    toast(e && e.code === "linked-art"
+      ? `Can't copy the chart — the art for ${listNames(e.names)} comes from a site that won't allow copying, so it would come out blank. ${uploadHint(e.names.length)}.`
+      : "Copying isn't available here — use Download instead.", "bad", 9000);
   }
 }
 
