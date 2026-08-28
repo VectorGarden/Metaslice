@@ -42,17 +42,41 @@ metaslice/
 
 Three ways, all in the **Results** panel: drop a file, paste rows, or type them into the table. There's also a sample event if you just want to see the thing work.
 
-Columns are matched by name, in any order, case-insensitively. Anything unrecognised is ignored.
+There is no fixed schema. Columns are matched by name, in any order, case-insensitively, with `_` and `-` treated as spaces. Anything unrecognised is ignored, so an export with player names, decklist links and a dozen other columns needs no tidying first.
 
 | Column | Also accepts | What it does |
 | --- | --- | --- |
-| `archetype` | deck, deck name, theme, strategy, name | The slice. Required. |
-| `sub` | sub-archetype, variant, engine, package, build | Splits a slice into bubbles. Optional. |
-| `count` | entries, decks, qty, players, total, # | How many decks. Leave it out and each row counts as one. |
-| `placement` | place, rank, finish, standing | Enables the top-cut filter. |
-| `image` | img, art, url | Portrait for that archetype, filled in automatically. |
+| `archetype` | deck, deckname, deck name, deck type, decktype, theme, strategy, name, list | The slice. The only one that matters. |
+| `sub` | subarchetype, sub archetype, sub-archetype, variant, engine, subtype, sub type, secondary, package, build | Splits a slice into bubbles. |
+| `count` | entries, decks, qty, quantity, total, amount, num, number, players, copies, `#` | How many decks. |
+| `pct` | percent, percentage, share, `%` | Used as the count when there is no count column — the chart works in proportions, so percentages weigh the slices correctly. |
+| `placement` | place, rank, ranking, position, finish, standing, result, top | Enables the top-cut filter. |
+| `image` | img, art, icon, picture, url, imageurl, image url | Portrait for that archetype. Only `http`/`https` values are used. |
 
-Both shapes work: **one row per deck** (with a placement) or **one row per archetype** (with a count). JSON can be an array of objects, an array of arrays, or a plain `{"Ryzeal": 13, "Maliss": 6}` map. XLSX is read with SheetJS, pulled from a CDN the first time you open a spreadsheet — offline, save as CSV instead.
+Both shapes work, and which one you have is worked out for you: **one row per deck** (no count — each row is one deck, usually with a placement) or **one row per archetype** (with a count). `samples/` has one of each: [`ycs-top-cut.csv`](samples/ycs-top-cut.csv) is a row per deck, [`regional-summary.tsv`](samples/regional-summary.tsv) is pre-counted, and [`meta-share.json`](samples/meta-share.json) shows the JSON form with an `image` column.
+
+### Formats
+
+**Delimited text** — the delimiter is sniffed from `,`, tab, `;` and `|`, so CSV, TSV and the semicolon-separated files some European spreadsheets produce all just open. Quoted fields, commas and newlines inside quotes, doubled `""` escapes, a UTF-8 BOM and CRLF endings are all handled. The extension does not have to be right; `.txt` is fine.
+
+**JSON**, any of:
+
+```json
+[{"archetype": "Ryzeal", "count": 13}]      // array of objects — the keys are the header
+[["archetype", "count"], ["Ryzeal", 13]]    // array of arrays
+{"Ryzeal": 13, "Maliss": 6}                 // a plain name → number map
+{"rows": [ ... ]}                           // unwrapped, then read as one of the above
+```
+
+**XLSX** is read with SheetJS, pulled from a CDN the first time you open a spreadsheet — offline, save as CSV instead. Sheets are searched for one whose columns are named, so a workbook that opens on a cover or summary page still reads the right one.
+
+### When it cannot tell
+
+- **No header it recognises?** The first column becomes the archetype, and the second becomes the count if it holds a number.
+- **Header not on the first row?** It is looked for in the first twelve, so event titles and blank lines above it are skipped.
+- **A count that is not a number** — `N/A`, blank, a stray dash — counts as one rather than dropping the row. Text around a number is fine: `13 decks`, `#13` and `1,234` all read as you would expect.
+- **A count of zero or less** drops that row.
+- **A row repeating the header** — some exports interleave them — is skipped rather than becoming an archetype called "Archetype".
 
 ## Archetype art
 
