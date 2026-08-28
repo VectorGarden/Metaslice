@@ -160,7 +160,7 @@ PNG, JPG, WEBP, AVIF, or SVG. Set any width from 200 to 8000 px; height follows 
 
 AVIF and WEBP encoding depends on the browser. If yours can't write the format you picked, the file is saved as the next best one and a note tells you which.
 
-SVG export is fully vector, with portraits embedded so the file stands on its own — except for any portrait that could only be linked, which is referenced by URL and needs a connection to show. Embedding is what makes those files big: a chart with art on every slice runs to a few megabytes of SVG, against a few hundred kilobytes of PNG. The other caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
+SVG export is fully vector, with portraits embedded so the file stands on its own — except for any portrait that could only be linked, which is referenced by URL and needs a connection to show. Embedding is what makes those files big: a chart with art on every slice runs to a few megabytes of SVG, against a few hundred kilobytes of PNG. It is drawn to stay right outside a browser too — no SVG 2 features a vector editor might not implement, so labels keep their halos instead of gaining a heavy outline — and it carries a description of the breakdown alongside the title, which is what a screen reader reads and what a search tool indexes. The other caveat is that raster export renders text in a system sans-serif, so it can differ very slightly from the on-screen preview.
 
 ## Icon
 
