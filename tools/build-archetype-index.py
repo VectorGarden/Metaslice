@@ -4,7 +4,7 @@
 Metaslice looks an archetype up live when you ask for art. This index is what
 it falls back to when that lookup cannot be reached, so Get all art still has
 somewhere to get a portrait from. It holds one image URL per archetype and
-nothing else — about 50 KB against the 20 MB the full card dump weighs.
+nothing else — some 50-odd KB against the 20 MB the full card dump weighs.
 
     python3 tools/build-archetype-index.py
 
@@ -58,10 +58,10 @@ def main():
     if len(art) < 500:
         sys.exit(f"Only {len(art)} archetypes found — that looks wrong, refusing to write.")
 
-    # One archetype per line, sorted. Costs about 3 KB over a minified object
-    # and makes the file readable and greppable — and, more to the point, makes
-    # a refresh show up as a handful of added lines rather than one rewritten
-    # 50 KB line nobody can review.
+    # One archetype per line, sorted. Costs a few KB over a minified object and
+    # makes the file readable and greppable — and, more to the point, makes a
+    # refresh show up as a handful of added lines rather than the whole file
+    # arriving as one rewritten line nobody can review.
     body = json.dumps(art, ensure_ascii=False, sort_keys=True, indent=2)
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(

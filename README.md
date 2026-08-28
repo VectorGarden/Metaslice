@@ -64,15 +64,26 @@ Or click any portrait in the **Slices** panel to set that one on its own. Three 
 - **Get card art from YGOPRODeck** — looks up the archetype and grabs the cropped card art.
 - **Paste an image URL** — anything on the web.
 
-For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. If the host refuses cross-origin reads the portrait can only be linked: it still shows in the preview, but the row turns pink and raster export is refused rather than writing a file with a blank where the art should be — download that image and upload it as a file, or export SVG.
+For the last two, the image is fetched and inlined as a data URL so exports stay self-contained. That needs the host to allow a cross-origin read, and YGOPRODeck's image host sends no CORS headers — hence the fallbacks below.
 
-YGOPRODeck's image host sends no CORS headers, so its bytes can't be read directly. When a direct read is refused the image is retried through **images.weserv.nl**, and then through **i0.wp.com** if that one is unreachable — image proxies that re-serve it with the header set — that's what lets *Get all art* produce a chart you can export as PNG. A host that allows the read is never sent anywhere; the proxy is only ever a fallback, and it only ever hands back a re-encoded image. It re-compresses, so a proxied portrait is slightly smaller and slightly softer than the original — upload the file by hand if you want it untouched.
+### When something is unreachable
 
-If the proxy can't reach the image either, the portrait falls back to a plain link: it still shows in the preview, but raster export is refused until you upload that one as a file.
+**Get all art** needs two separate things, and they fail independently: the *lookup* that says which card represents an archetype, and the *image* itself.
 
-If YGOPRODeck's lookup itself can't be reached, the archetype is resolved against `data/archetype-art.js` instead — one portrait URL per archetype, about 50 KB, picked so it matches whatever the live lookup would have returned. It only loads when the live lookup fails, so a normal visit never pays for it. The image is still fetched over the network as usual, so this covers the lookup going down, not your connection. Archetypes printed after the file was last generated won't be in it, and *Get all art* says so when it uses it. See [Refreshing the archetype index](#refreshing-the-archetype-index).
+| | First | Then | Then | If none of it works |
+| --- | --- | --- | --- | --- |
+| **Lookup** | `db.ygoprodeck.com` | `data/archetype-art.js`, bundled with the site | — | that archetype is listed at the end for you to fill in by hand |
+| **Image** | read it straight from the host | `images.weserv.nl` | `i0.wp.com` | the portrait is linked instead of embedded |
 
-**Fetch art that blocks direct copying through a proxy** turns the fallback off. With it off, nothing but YGOPRODeck is contacted; art it won't hand over directly is linked instead of embedded, so raster export is refused while any of it is on the chart. The setting is remembered in your browser and is deliberately *not* written into **Save setup**, so loading someone else's setup never changes it for you.
+A host that allows a direct read is never sent to a proxy. Both proxies are image CDNs rather than general-purpose ones, so neither can hand back anything but an image. They re-compress, so a proxied portrait is a little smaller and a little softer than the original — upload the file by hand if you want it untouched.
+
+Every attempt has eight seconds. A proxy that times out is dropped for the rest of that run, so an outage costs eight seconds once rather than eight seconds per archetype; it gets another chance on the next run.
+
+A **linked** portrait still shows in the preview, but its row turns pink and raster export is refused rather than writing a file with a blank where the art should be — download that image and upload it as a file, or export SVG.
+
+The bundled index only loads when the live lookup fails, so a normal visit never downloads it at all. It supplies a URL rather than the picture itself, so it covers the lookup going down, not your own connection dropping. Archetypes printed since it was last built won't be in it, and *Get all art* tells you when it fell back to it and how old it is — see [Refreshing the archetype index](#refreshing-the-archetype-index).
+
+**Fetch art that blocks direct copying through a proxy** turns the image fallback off. With it off, nothing but YGOPRODeck is contacted; art it won't hand over directly is linked instead of embedded, so raster export is refused while any of it is on the chart. The setting is remembered in your browser and is deliberately *not* written into **Save setup**, so loading someone else's setup never changes it for you.
 
 Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *Fiendsmith Ryzeal* bubble are set separately. **Save setup** writes colours, portraits, settings and rows to a JSON file — reload it next event and you keep your whole art library.
 
@@ -80,7 +91,9 @@ Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *
 
 `data/archetype-art.js` is a snapshot. Roughly **four new archetypes are printed a month** — about 44 a year over 2021–25 — and a tournament chart leans on recent ones, so left alone it decays exactly where it's needed.
 
-`.github/workflows/refresh-archetype-index.yml` rebuilds it on the 1st of each month, which keeps the gap to about a set's worth. It commits only when archetypes were actually added or removed, not merely because the file was regenerated, and deploys afterwards — a push made with `GITHUB_TOKEN` can't trigger the deploy workflow on its own, so it calls it explicitly. The run summary lists what changed. You can also start it by hand from the **Actions** tab.
+`.github/workflows/refresh-archetype-index.yml` rebuilds it on the 1st of each month, which keeps the gap to about a set's worth. It commits only when archetypes were actually added or removed, not merely because the file was regenerated, and deploys afterwards — a push made with `GITHUB_TOKEN` can't trigger the deploy workflow on its own, so it calls it explicitly, passing the commit it just made. The run summary lists what changed. You can also start it by hand from the **Actions** tab.
+
+If you ever check that a refresh really published: the deployment GitHub records is labelled with the commit that *started* the run, not the one that was deployed, because that is how a called workflow is attributed. Compare the served file, or read the `git checkout` line in the deploy job's log. The SHA in the deployments list will look wrong even when everything worked.
 
 To rebuild locally:
 
@@ -91,7 +104,7 @@ python3 tools/index-change-report.py   # optional: what moved, and whether it's 
 
 The generator reads the card dump from YGOPRODeck, keeps one image URL per archetype, and rewrites the file — commit the result. It refuses to write if it comes back with an implausibly small number of archetypes, so a bad response can't quietly empty the fallback. Nothing else in the repository is generated, and the site still needs no build step.
 
-The file is one archetype per line, sorted, so a refresh reads as a few added lines rather than one rewritten 50 KB line. The object is plain JSON wrapped in an assignment — it isn't a `.json` file because a script tag resolves from `file://` and `fetch` of a sibling file does not, and the app is meant to work when opened straight from disk. To get the JSON on its own:
+The file is one archetype per line, sorted, so a refresh reads as a few added lines rather than the whole file arriving as one rewritten line. The object is plain JSON wrapped in an assignment — it isn't a `.json` file because a script tag resolves from `file://` and `fetch` of a sibling file does not, and the app is meant to work when opened straight from disk. To get the JSON on its own:
 
 ```bash
 sed '1,/^window.ARCHETYPE_ART = /d;$d' data/archetype-art.js
