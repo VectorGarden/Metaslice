@@ -19,6 +19,10 @@ metaslice/
 ├── LICENSE                 MIT
 ├── .github/workflows/
 │   └── deploy.yml          publishes to Pages on every push to main
+├── data/
+│   └── archetype-art.js    one portrait URL per archetype, the offline fallback
+├── tools/
+│   └── build-archetype-index.py  regenerates that file
 ├── assets/
 │   ├── icon.svg            source icon (also the in-app logo)
 │   ├── favicon.ico         multi-size 16→256 for hosting
@@ -64,9 +68,21 @@ YGOPRODeck's image host sends no CORS headers, so its bytes can't be read direct
 
 If the proxy can't reach the image either, the portrait falls back to a plain link: it still shows in the preview, but raster export is refused until you upload that one as a file.
 
+If YGOPRODeck's lookup itself can't be reached, the archetype is resolved against `data/archetype-art.js` instead — one portrait URL per archetype, about 50 KB, picked so it matches whatever the live lookup would have returned. It only loads when the live lookup fails, so a normal visit never pays for it. The image is still fetched over the network as usual, so this covers the lookup going down, not your connection. Archetypes printed after the file was last generated won't be in it, and *Get all art* says so when it uses it. See [Refreshing the archetype index](#refreshing-the-archetype-index).
+
 **Fetch art that blocks direct copying through a proxy** turns the fallback off. With it off, nothing but YGOPRODeck is contacted; art it won't hand over directly is linked instead of embedded, so raster export is refused while any of it is on the chart. The setting is remembered in your browser and is deliberately *not* written into **Save setup**, so loading someone else's setup never changes it for you.
 
 Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *Fiendsmith Ryzeal* bubble are set separately. **Save setup** writes colours, portraits, settings and rows to a JSON file — reload it next event and you keep your whole art library.
+
+### Refreshing the archetype index
+
+`data/archetype-art.js` is a snapshot, so new archetypes need it rebuilt:
+
+```bash
+python3 tools/build-archetype-index.py
+```
+
+It reads the card dump from YGOPRODeck, keeps one image URL per archetype, and rewrites the file — commit the result. Nothing else in the repository is generated, and the site still needs no build step. It refuses to write if it comes back with an implausibly small number of archetypes, so a bad response can't quietly empty the fallback.
 
 ## Chart controls
 
@@ -151,6 +167,8 @@ Your results never leave the tab: files you load, the rows you type, colours and
 | `i0.wp.com` | only if weserv is unreachable — same job, same thing seen, same switch |
 
 Neither sees your tournament results. If you'd rather nothing left the tab at all, set portraits with **Upload an image**, which never makes a request.
+
+The offline archetype index adds no third host: it ships with the site, and the URLs in it point back at YGOPRODeck's own image host.
 
 ## Sample data
 
