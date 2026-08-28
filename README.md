@@ -18,11 +18,13 @@ metaslice/
 ├── sitemap.xml
 ├── LICENSE                 MIT
 ├── .github/workflows/
-│   └── deploy.yml          publishes to Pages on every push to main
+│   ├── deploy.yml          publishes to Pages on every push to main
+│   └── refresh-archetype-index.yml  rebuilds the fallback index monthly
 ├── data/
 │   └── archetype-art.js    one portrait URL per archetype, the offline fallback
 ├── tools/
-│   └── build-archetype-index.py  regenerates that file
+│   ├── build-archetype-index.py     regenerates that file
+│   └── index-change-report.py       says whether a rebuild is worth committing
 ├── assets/
 │   ├── icon.svg            source icon (also the in-app logo)
 │   ├── favicon.ico         multi-size 16→256 for hosting
@@ -76,13 +78,18 @@ Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *
 
 ### Refreshing the archetype index
 
-`data/archetype-art.js` is a snapshot, so new archetypes need it rebuilt:
+`data/archetype-art.js` is a snapshot. Roughly **four new archetypes are printed a month** — about 44 a year over 2021–25 — and a tournament chart leans on recent ones, so left alone it decays exactly where it's needed.
+
+`.github/workflows/refresh-archetype-index.yml` rebuilds it on the 1st of each month, which keeps the gap to about a set's worth. It commits only when archetypes were actually added or removed, not merely because the file was regenerated, and deploys afterwards — a push made with `GITHUB_TOKEN` can't trigger the deploy workflow on its own, so it calls it explicitly. The run summary lists what changed. You can also start it by hand from the **Actions** tab.
+
+To rebuild locally:
 
 ```bash
 python3 tools/build-archetype-index.py
+python3 tools/index-change-report.py   # optional: what moved, and whether it's worth committing
 ```
 
-It reads the card dump from YGOPRODeck, keeps one image URL per archetype, and rewrites the file — commit the result. Nothing else in the repository is generated, and the site still needs no build step. It refuses to write if it comes back with an implausibly small number of archetypes, so a bad response can't quietly empty the fallback.
+The generator reads the card dump from YGOPRODeck, keeps one image URL per archetype, and rewrites the file — commit the result. It refuses to write if it comes back with an implausibly small number of archetypes, so a bad response can't quietly empty the fallback. Nothing else in the repository is generated, and the site still needs no build step.
 
 ## Chart controls
 
