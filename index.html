@@ -1652,20 +1652,100 @@ on("#btnSaveConfig", "click", () => {
   toast("Setup saved — colours, art and settings included.", "good");
 });
 on("#btnLoadConfig", "click", () => $("#configInput").click());
+// A setup file is data from wherever the reader got it. Read it rather than
+// trusting it: keep what is recognisable and well formed, drop the rest, and
+// apply nothing at all unless the whole thing parses. The previous version
+// assigned each section as it went, so a malformed rows array threw halfway
+// and left options, colours and art already replaced while telling the reader
+// the file was not a setup.
+const SETUP_KEYS = ["opts", "exportOpts", "colors", "art", "rows"];
+const HEX = /^#[0-9a-f]{6}$/i;
+const UNSAFE_KEY = /^(__proto__|constructor|prototype)$/;
+const OPT_ONE_OF = { labels: ["outside", "inside", "none"], legend: ["right", "bottom", "none"] };
+const OPT_RANGE = { topCut: [0, 64], threshold: [0, 20], donut: [0, 70], gap: [0, 6] };
+const EXPORT_ONE_OF = {
+  format: ["image/png", "image/jpeg", "image/webp", "image/avif", "image/svg+xml"],
+  scope: ["chart", "labels", "full"]
+};
+const EXPORT_RANGE = { width: [200, 8000], quality: [40, 100] };
+
+// Only keys the app already has, of the type it already holds, inside the range
+// the controls allow — so a file cannot put the state somewhere the UI could
+// not have.
+function readOptions(given, defaults, oneOf, ranges) {
+  const out = {};
+  if (!given || typeof given !== "object") return out;
+  for (const k of Object.keys(defaults)) {
+    if (!Object.prototype.hasOwnProperty.call(given, k)) continue;
+    const v = given[k], def = defaults[k];
+    if (oneOf[k]) { if (oneOf[k].includes(v)) out[k] = v; }
+    else if (typeof def === "boolean") { if (typeof v === "boolean") out[k] = v; }
+    else if (typeof def === "number") {
+      const n = Number(v);
+      if (Number.isFinite(n)) out[k] = ranges[k] ? clamp(n, ranges[k][0], ranges[k][1]) : n;
+    } else if (typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
+function readSetup(d) {
+  if (!d || typeof d !== "object" || Array.isArray(d)) return null;
+  // Nothing we recognise means this is some other file, not a broken setup.
+  if (!SETUP_KEYS.some(k => d[k] && typeof d[k] === "object")) return null;
+
+  const colors = {};
+  if (d.colors && typeof d.colors === "object") {
+    for (const [k, v] of Object.entries(d.colors)) {
+      if (!UNSAFE_KEY.test(k) && typeof v === "string" && HEX.test(v)) colors[k] = v;
+    }
+  }
+  const art = {};
+  if (d.art && typeof d.art === "object") {
+    for (const [k, v] of Object.entries(d.art)) {
+      if (!UNSAFE_KEY.test(k) && v && typeof v === "object" && typeof v.src === "string" && v.src) {
+        art[k] = { src: v.src, embedded: !!v.embedded };
+      }
+    }
+  }
+  const rows = Array.isArray(d.rows)
+    ? d.rows.filter(r => r && typeof r === "object" && String(r.archetype ?? "").trim()).map(r => ({
+        archetype: String(r.archetype).trim(),
+        sub: String(r.sub ?? "").trim(),
+        count: Number.isFinite(Number(r.count)) && Number(r.count) > 0 ? Number(r.count) : 1,
+        placement: r.placement === null || r.placement === undefined || !Number.isFinite(Number(r.placement))
+          ? null : Number(r.placement)
+      }))
+    : null;
+
+  return {
+    opts: readOptions(d.opts, state.opts, OPT_ONE_OF, OPT_RANGE),
+    exportOpts: readOptions(d.exportOpts, state.exportOpts, EXPORT_ONE_OF, EXPORT_RANGE),
+    colors, art, rows
+  };
+}
+
 $("#configInput").addEventListener("change", async () => {
-  const f = $("#configInput").files[0]; if (!f) return;
-  try {
-    const d = JSON.parse(await f.text());
-    if (d.opts) Object.assign(state.opts, d.opts);
-    if (d.exportOpts) Object.assign(state.exportOpts, d.exportOpts);
-    if (d.colors) state.colors = d.colors;
-    if (d.art) state.art = d.art;
-    if (!state.art[OTHER_KEY]) state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
-    if (Array.isArray(d.rows) && d.rows.length) { state.rows = d.rows; state.hadPlacements = d.rows.some(r => Number.isFinite(r.placement)); }
-    syncInputs(); syncManualTable(); refresh();
-    toast("Setup restored.", "good");
-  } catch (e) { toast("That file isn't a Metaslice setup.", "bad"); }
+  const f = $("#configInput").files[0];
   $("#configInput").value = "";
+  if (!f) return;
+  let setup = null;
+  try { setup = readSetup(JSON.parse(await f.text())); } catch (e) { /* not JSON */ }
+  if (!setup) return toast("That file isn't a Metaslice setup.", "bad");
+
+  Object.assign(state.opts, setup.opts);
+  Object.assign(state.exportOpts, setup.exportOpts);
+  state.colors = setup.colors;
+  state.art = setup.art;
+  if (!state.art[OTHER_KEY]) state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
+  // A subtitle that came from the file is the reader's, not ours to regenerate
+  // the next time results are loaded.
+  if ("subtitle" in setup.opts) state.autoSubtitle = !setup.opts.subtitle;
+  if (setup.rows && setup.rows.length) {
+    state.rows = setup.rows;
+    state.hadPlacements = setup.rows.some(r => Number.isFinite(r.placement));
+  }
+  syncInputs(); syncManualTable(); refresh();
+  toast("Setup restored.", "good");
 });
 
 on("#themeToggle", "click", () => {
