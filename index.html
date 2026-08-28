@@ -1027,8 +1027,8 @@ async function embedURL(key, url, quiet) {
 // is the answer to the lookup, not to the download — the image itself is still
 // fetched, through the proxies above if its host will not allow a direct read.
 //
-// Pulled in only when the live lookup cannot be reached, so nobody pays the
-// 50 KB for a feature they never hit. Loaded as a script rather than fetched
+// Pulled in only when the live lookup cannot be reached, so nobody downloads
+// it for a feature they never hit. Loaded as a script rather than fetched
 // as JSON so it also resolves from file://, where fetch of a sibling file is
 // refused.
 let archetypeIndex = null;   // null = not loaded, {} = tried and unavailable
