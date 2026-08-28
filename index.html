@@ -749,6 +749,24 @@ function initials(name) {
   const w = name.replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
   return ((w[0] || "?")[0] + (w[1] ? w[1][0] : "")).toUpperCase();
 }
+// A label sitting on a slice needs a halo to stay readable. Drawn as a stroked
+// copy underneath and the plain one on top, rather than one element relying on
+// paint-order: that is SVG 2, and a renderer without it paints the stroke over
+// the fill instead — a 3.2px outline across the middle of every inside label.
+// The colour is a stroke plus stroke-opacity for the same reason: rgba() in a
+// presentation attribute is SVG 2 as well, and older tools drop it and leave
+// the halo fully opaque.
+function haloed(parent, attrs, text) {
+  const onDark = attrs.fill === "#FFFFFF";
+  parent.appendChild(el("text", Object.assign({}, attrs, {
+    stroke: onDark ? "#000000" : "#FFFFFF",
+    "stroke-opacity": onDark ? 0.5 : 0.62,
+    "stroke-width": 3.2,
+    "stroke-linejoin": "round"
+  }), text));
+  parent.appendChild(el("text", attrs, text));
+}
+
 function themeColors() {
   const cs = getComputedStyle(document.documentElement);
   const g = n => cs.getPropertyValue(n).trim();
@@ -791,6 +809,12 @@ function buildChart(agg, ov) {
     "font-family": CHART_FONT, role: "img"
   });
   svg.appendChild(el("title", {}, (o.title || "Tournament") + " archetype breakdown"));
+  // Exported on its own the file is read without any of the page around it, so
+  // describe the breakdown rather than only naming it.
+  if (slices.length) {
+    svg.appendChild(el("desc", {}, `${agg.grand.toLocaleString()} decks across ${slices.length} slices. ` +
+      slices.map(x => `${x.name} ${(x.pct * 100).toFixed(1)}% (${x.total})`).join(", ") + "."));
+  }
   const defs = el("defs"); svg.appendChild(defs);
   const bgRect = el("rect", { id: "chart-bg", x: 0, y: 0, width: W, height: H, fill: T.bg });
   svg.appendChild(bgRect);
@@ -918,9 +942,8 @@ function buildChart(agg, ov) {
       const ly = cy + midR * Math.sin(mid) + (ri ? ri + 17 : 4);
       const lx = cx + midR * Math.cos(mid);
       const ink = readableOn(s.color);
-      const halo = { stroke: ink === "#FFFFFF" ? "rgba(0,0,0,.5)" : "rgba(255,255,255,.62)", "stroke-width": 3.2, "stroke-linejoin": "round", "paint-order": "stroke" };
-      gLabels.appendChild(el("text", Object.assign({ x: lx, y: ly, "text-anchor": "middle", fill: ink, "font-size": 15, "font-weight": 600 }, halo), fit(s.name, band * 1.5, 15)));
-      gLabels.appendChild(el("text", Object.assign({ x: lx, y: ly + 17, "text-anchor": "middle", fill: ink, "fill-opacity": .82, "font-size": 12.5 }, halo), fmt(s)));
+      haloed(gLabels, { x: lx, y: ly, "text-anchor": "middle", fill: ink, "font-size": 15, "font-weight": 600 }, fit(s.name, band * 1.5, 15));
+      haloed(gLabels, { x: lx, y: ly + 17, "text-anchor": "middle", fill: ink, "fill-opacity": .82, "font-size": 12.5 }, fmt(s));
     }
   } else if (o.labels === "outside") {
     const sides = { 1: [], "-1": [] };
