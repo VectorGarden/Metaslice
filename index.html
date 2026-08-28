@@ -124,7 +124,7 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
 .switch input:checked::after{transform:translateX(14px)}
 .seg{display:flex;background:var(--field);border:1px solid var(--edge);border-radius:var(--r-md);padding:2px;gap:2px}
 .seg button{flex:1;border:0;background:transparent;padding:6px 4px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--muted)}
-.seg button[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--panel-2);color:var(--ink);font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.12)}
 
 /* ---------- layout ---------- */
 .app{display:grid;grid-template-columns:minmax(340px,400px) 1fr;gap:clamp(12px,2vw,22px);padding:clamp(12px,2vw,22px);align-items:stretch}
@@ -245,12 +245,12 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
       <summary><span class="step">01</span> Results</summary>
       <div class="body">
         <div class="seg" role="tablist" id="srcTabs" style="margin-bottom:12px">
-          <button role="tab" data-src="file" aria-pressed="true">File</button>
-          <button role="tab" data-src="paste" aria-pressed="false">Paste</button>
-          <button role="tab" data-src="manual" aria-pressed="false">Type it in</button>
+          <button type="button" role="tab" id="tab-file" aria-controls="pane-file" data-src="file" aria-selected="true">File</button>
+          <button type="button" role="tab" id="tab-paste" aria-controls="pane-paste" data-src="paste" aria-selected="false">Paste</button>
+          <button type="button" role="tab" id="tab-manual" aria-controls="pane-manual" data-src="manual" aria-selected="false">Type it in</button>
         </div>
 
-        <div data-pane="file">
+        <div data-pane="file" id="pane-file" role="tabpanel" aria-labelledby="tab-file">
           <div class="drop" id="drop" tabindex="0" role="button">
             <b>Drop a results file, or click to pick one</b>
             <small>CSV · TSV · JSON · XLSX</small>
@@ -259,7 +259,7 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
           <p class="hint">Columns are matched by name, in any order: <code>archetype</code>, <code>sub</code>, <code>count</code>, <code>placement</code>, <code>image</code>. One row per deck also works — leave <code>count</code> out and each row counts as one.</p>
         </div>
 
-        <div data-pane="paste" hidden>
+        <div data-pane="paste" id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" hidden>
           <textarea id="pasteBox" rows="9" placeholder="archetype,sub,count&#10;Ryzeal,Fiendsmith,14&#10;Maliss,,9&#10;Tenpai Dragon,,7"></textarea>
           <div class="row two" style="margin-top:8px">
             <button class="btn" id="btnParsePaste">Read this</button>
@@ -267,7 +267,7 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
           </div>
         </div>
 
-        <div data-pane="manual" hidden>
+        <div data-pane="manual" id="pane-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
           <table class="tbl"><thead><tr><th style="width:38%">Archetype</th><th style="width:28%">Sub</th><th style="width:15%">Count</th><th style="width:15%">Place</th><th></th></tr></thead><tbody id="manualBody"></tbody></table>
           <div class="row two" style="margin-top:8px">
             <button class="btn" id="btnAddRow">Add row</button>
@@ -397,6 +397,9 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const keyOf = s => String(s || "").trim().toLowerCase();
+// A portrait URL can come straight from an untrusted results file; quoting it
+// into a CSS url() without escaping would let `")` break out of the string.
+const cssUrl = u => 'url("' + String(u).replace(/[\r\n]/g, "").replace(/[\\"]/g, "\\$&") + '")';
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 function toast(msg, kind = "", ms = 4200) {
@@ -433,7 +436,7 @@ function readableOn(hex) {
 const state = {
   rows: [],                    // {archetype, sub, count, placement}
   colors: {},                  // key -> hex
-  art: {},                     // key -> {src, embedded}
+  art: { [OTHER_KEY]: DEFAULT_OTHER_ART() },   // key -> {src, embedded}
   hadPlacements: false,
   opts: {
     topCut: 0, threshold: 5, title: "", subtitle: "", labels: "outside", legend: "right",
@@ -478,7 +481,8 @@ function sniffDelimiter(text) {
   const line = text.split(/\r?\n/).find(l => l.trim()) || "";
   const counts = { ",": 0, "\t": 0, ";": 0, "|": 0 };
   for (const ch of line) if (ch in counts) counts[ch]++;
-  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][1] ? Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] : ",";
+  const [best, hits] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return hits ? best : ",";
 }
 const num = v => { const n = parseFloat(String(v).replace(/[^0-9.\-]/g, "")); return Number.isFinite(n) ? n : null; };
 
@@ -532,7 +536,13 @@ async function readXLSX(file) {
   if (!window.XLSX) {
     await new Promise((res, rej) => {
       const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      // SheetJS's own CDN: they left npm/cdnjs at 0.18.5, which is vulnerable to
+      // prototype pollution while parsing a workbook (CVE-2023-30533, fixed in 0.19.3).
+      s.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+      // Pinned by hash: a tampered CDN copy is refused rather than executed.
+      s.integrity = "sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT";
+      s.crossOrigin = "anonymous";
+      s.referrerPolicy = "no-referrer";
       s.onload = res; s.onerror = () => rej(new Error("no-sheetjs"));
       document.head.appendChild(s);
     });
@@ -594,6 +604,9 @@ function aggregate() {
   }
   let items = [...map.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
   if (cutMode === "byCount") items = items.slice(0, topN);
+  // Palette seats are handed out over the whole field, so dragging the Other
+  // threshold folds archetypes away without recolouring the ones that remain.
+  items.forEach((it, i) => { it.seat = i; });
 
   const grand = items.reduce((s, i) => s + i.total, 0);
   const thr = (state.opts.threshold / 100) * grand;
@@ -604,7 +617,7 @@ function aggregate() {
     if (!keep.length) { keep = items; other = []; }
     if (other.length === 1) { keep.push(other.pop()); keep.sort((a, b) => b.total - a.total); }
   }
-  keep.forEach((it, i) => { it.color = state.colors[it.key] || PALETTE[i % PALETTE.length]; });
+  keep.forEach(it => { it.color = state.colors[it.key] || PALETTE[it.seat % PALETTE.length]; });
   if (other.length) {
     keep.push({
       key: OTHER_KEY, name: "Other", isOther: true,
@@ -628,7 +641,10 @@ function aggregate() {
 const SVGNS = "http://www.w3.org/2000/svg";
 const XLINK = "http://www.w3.org/1999/xlink";
 const TAU = Math.PI * 2;
-const CHART_FONT = "Inter, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+// Deliberately system-only: an SVG rendered into <img> for raster export cannot
+// reach the page's webfonts, so naming one here would make exports differ from
+// the preview on machines that happen to have it installed.
+const CHART_FONT = "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 let uid = 0;
 
 function el(tag, attrs, text) {
@@ -704,6 +720,13 @@ function buildChart(agg, ov) {
   const rI = rO * (o.donut / 100);
   const band = rO - rI;
   const cx = PAD + availW / 2, cy = top + availH / 2;
+
+  // A long legend must not run off the bottom of the canvas — grow the page
+  // instead of silently clipping entries out of the export.
+  const legendSubs = o.legend === "right" && showSubs && slices.some(s => s.subList.length);
+  const legendRowH = o.legend === "right" && slices.length
+    ? clamp(availH / slices.length, legendSubs ? 26 : 20, legendSubs ? 42 : 30) : 0;
+  if (o.legend === "right") H = Math.max(H, Math.ceil(top + 12 + legendRowH * slices.length + PAD));
 
   const svg = el("svg", {
     xmlns: SVGNS, "xmlns:xlink": XLINK, viewBox: `0 0 ${W} ${H}`, width: W, height: H,
@@ -848,9 +871,18 @@ function buildChart(agg, ov) {
       const side = Math.cos(mid) >= 0 ? 1 : -1;
       sides[side].push({ s, mid, side, y: cy + (rO + 24) * Math.sin(mid) });
     }
-    const minGap = 42, hi = top + 6, lo = top + availH - 6;
+    const hi = top + 6, lo = top + availH - 6, tightGap = 26;
     for (const k of [1, -1]) {
       const list = sides[k].sort((a, b) => a.y - b.y);
+      // Tighten the stack when a side carries more labels than roomy spacing allows.
+      // Past what even tight spacing fits, drop the smallest slices rather than run
+      // them off the canvas — they are still named in the legend.
+      const room = Math.floor((lo - hi) / tightGap) + 1;
+      if (list.length > room) {
+        list.sort((a, b) => b.s.pct - a.s.pct).length = room;
+        list.sort((a, b) => a.y - b.y);
+      }
+      const minGap = list.length > 1 ? clamp((lo - hi) / (list.length - 1), tightGap, 42) : 42;
       for (let i = 1; i < list.length; i++) if (list[i].y - list[i - 1].y < minGap) list[i].y = list[i - 1].y + minGap;
       const overflow = list.length ? list[list.length - 1].y - lo : 0;
       if (overflow > 0) for (let i = list.length - 1; i >= 0; i--) list[i].y = Math.min(list[i].y, lo - (list.length - 1 - i) * minGap);
@@ -885,10 +917,8 @@ function buildChart(agg, ov) {
     };
     if (o.legend === "right") {
       const x = W - LEG_W + 10, w = LEG_W - PAD - 6;
-      const anySub = showSubs && slices.some(s => s.subList.length);
-      const rowH = clamp((availH) / slices.length, 20, anySub ? 42 : 30);
       let y = top + 12;
-      slices.forEach(s => { entry(x, y, s, w); y += rowH; });
+      slices.forEach(s => { entry(x, y, s, w); y += legendRowH; });
     } else {
       const colW = (W - PAD * 2) / legendCols;
       const y0 = H - PAD - legendH + 22;
@@ -1015,57 +1045,127 @@ function openArtMenu(anchor, key, name) {
 /* ============================ UI rendering ============================ */
 let lastAgg = { slices: [], grand: 0 };
 
+/* The Slices list is reconciled in place rather than rebuilt from scratch. A full
+   teardown on every animation frame would tear the colour input out from under a
+   live drag, and it threw away focus while you were still using the row. */
+const archRows = new Map();   // slice key -> row parts
+
+function paintFace(node, art) {   // returns true when a portrait is showing
+  const want = art && art.src ? cssUrl(art.src) : "";
+  if (node._bg !== want) { node.style.backgroundImage = want; node._bg = want; }
+  return !!want;
+}
+function setText(node, text) { if (node.textContent !== text) node.textContent = text; }
+
+function makeArchRow() {
+  const row = { key: null, artKey: null, artName: "", color: null, chips: new Map(), subsIn: false };
+  row.wrap = document.createElement("div");
+  row.pic = document.createElement("button");
+  row.pic.type = "button";
+  const mid = document.createElement("div");
+  mid.style.minWidth = "0";
+  row.name = document.createElement("div"); row.name.className = "arch-name";
+  row.meta = document.createElement("div"); row.meta.className = "arch-meta";
+  mid.append(row.name, row.meta);
+  row.sw = document.createElement("label");
+  row.sw.className = "swatch";
+  row.sw.title = "Slice colour";
+  row.ci = document.createElement("input");
+  row.ci.type = "color";
+  row.sw.appendChild(row.ci);
+  row.subs = document.createElement("div");
+  row.subs.className = "arch-subs";
+  row.wrap.append(row.pic, mid, row.sw);
+  // Handlers read the row's current identity, so a recycled row stays correct.
+  row.pic.addEventListener("click", e => { e.stopPropagation(); openArtMenu(row.pic, row.artKey, row.artName); });
+  row.ci.addEventListener("input", () => { state.colors[row.key] = row.ci.value; row.sw.style.background = row.ci.value; scheduleRefresh(); });
+  return row;
+}
+
+function makeChip() {
+  const chip = { key: null, name: "" };
+  chip.el = document.createElement("button");
+  chip.el.type = "button";
+  chip.el.className = "chip";
+  chip.dot = document.createElement("i");
+  chip.label = document.createTextNode("");
+  chip.count = document.createElement("span");
+  chip.count.style.cssText = "color:var(--faint);font-family:var(--mono)";
+  chip.el.append(chip.dot, chip.label, chip.count);
+  chip.el.addEventListener("click", e => { e.stopPropagation(); openArtMenu(chip.el, chip.key, chip.name); });
+  return chip;
+}
+
+function updateArchRow(row, s) {
+  const aKey = sliceArtKey(s), art = state.art[aKey];
+  row.key = s.key; row.artKey = aKey; row.artName = s.name;
+
+  const wrapCls = "arch" + (s.isOther ? " other" : "");
+  if (row.wrap.className !== wrapCls) row.wrap.className = wrapCls;
+  const picCls = "art" + (art && !art.embedded ? " warn" : "");
+  if (row.pic.className !== picCls) row.pic.className = picCls;
+  setText(row.pic, paintFace(row.pic, art) ? "" : (s.isOther ? "…" : initials(s.name)));
+  const picTitle = s.isOther ? "The card back — swap it for anything you like" : "Set art for " + s.name;
+  if (row.pic.title !== picTitle) row.pic.title = picTitle;
+
+  setText(row.name, s.name);
+  setText(row.meta, `${s.total} · ${(s.pct * 100).toFixed(1)}%`);
+
+  if (row.color !== s.color) {
+    row.color = s.color;
+    row.pic.style.borderColor = s.color;
+    row.sw.style.background = s.color;
+    // Only ever written when the colour changed elsewhere, so a native picker
+    // mid-drag is never fought for control of its own input.
+    if (row.ci.value.toLowerCase() !== s.color.toLowerCase()) row.ci.value = s.color;
+  }
+
+  if (!s.subList.length) {
+    if (row.subsIn) { row.subs.remove(); row.subsIn = false; }
+    row.subs.textContent = "";   // drop the detached chips too, or they resurface
+    row.chips.clear();
+    return;
+  }
+  if (!row.subsIn) { row.wrap.appendChild(row.subs); row.subsIn = true; }
+  const live = new Set();
+  let prev = null;
+  for (const sub of s.subList) {
+    const k = s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name);
+    live.add(k);
+    let chip = row.chips.get(k);
+    if (!chip) { chip = makeChip(); row.chips.set(k, chip); }
+    chip.key = k; chip.name = sub.name;
+    paintFace(chip.dot, state.art[k]);
+    setText(chip.label, sub.name + " ");
+    setText(chip.count, String(sub.total));
+    const at = prev ? prev.el.nextSibling : row.subs.firstChild;
+    if (at !== chip.el) row.subs.insertBefore(chip.el, at);
+    prev = chip;
+  }
+  for (const [k, chip] of row.chips) if (!live.has(k)) { chip.el.remove(); row.chips.delete(k); }
+}
+
 function renderArchList(agg) {
   const host = $("#archList");
-  host.innerHTML = "";
   if (!agg.slices.length) {
+    archRows.clear();
     host.innerHTML = `<p class="hint" style="margin:4px 0">Nothing loaded yet. Add results above and every archetype shows up here with its own colour and portrait.</p>`;
     return;
   }
+  if (host.firstElementChild && !host.firstElementChild.classList.contains("arch")) host.innerHTML = "";
+
+  const live = new Set();
+  let prev = null;
   for (const s of agg.slices) {
-    const wrap = document.createElement("div");
-    wrap.className = "arch" + (s.isOther ? " other" : "");
-    const aKey = sliceArtKey(s);
-    const art = state.art[aKey];
-    const pic = document.createElement("button");
-    pic.className = "art" + (art && !art.embedded ? " warn" : "");
-    pic.style.borderColor = s.color;
-    if (art) pic.style.backgroundImage = `url("${art.src}")`;
-    else pic.textContent = s.isOther ? "…" : initials(s.name);
-    pic.title = s.isOther ? "The card back — swap it for anything you like" : "Set art for " + s.name;
-    pic.addEventListener("click", e => { e.stopPropagation(); openArtMenu(pic, aKey, s.name); });
-
-    const mid = document.createElement("div");
-    mid.style.minWidth = "0";
-    mid.innerHTML = `<div class="arch-name">${esc(s.name)}</div><div class="arch-meta">${s.total} · ${(s.pct * 100).toFixed(1)}%</div>`;
-
-    const sw = document.createElement("label");
-    sw.className = "swatch";
-    sw.style.background = s.color;
-    sw.title = "Slice colour";
-    const ci = document.createElement("input");
-    ci.type = "color"; ci.value = s.color;
-    ci.addEventListener("input", () => { state.colors[s.key] = ci.value; sw.style.background = ci.value; scheduleRefresh(); });
-    sw.appendChild(ci);
-
-    wrap.append(pic, mid, sw);
-    if (s.subList.length) {
-      const subs = document.createElement("div");
-      subs.className = "arch-subs";
-      for (const sub of s.subList) {
-        const k = s.isOther ? artKey(sub.name, "") : artKey(s.name, sub.name);
-        const a2 = state.art[k];
-        const chip = document.createElement("button");
-        chip.className = "chip";
-        chip.innerHTML = `<i></i>${esc(sub.name)} <span style="color:var(--faint);font-family:var(--mono)">${sub.total}</span>`;
-        if (a2) $("i", chip).style.backgroundImage = `url("${a2.src}")`;
-        chip.addEventListener("click", e => { e.stopPropagation(); openArtMenu(chip, k, sub.name); });
-        subs.appendChild(chip);
-      }
-      wrap.appendChild(subs);
-    }
-    host.appendChild(wrap);
+    live.add(s.key);
+    let row = archRows.get(s.key);
+    if (!row) { row = makeArchRow(); archRows.set(s.key, row); }
+    updateArchRow(row, s);
+    const at = prev ? prev.wrap.nextSibling : host.firstChild;
+    if (at !== row.wrap) host.insertBefore(row.wrap, at);   // no-op when already in place
+    prev = row;
   }
+  for (const [k, row] of archRows) if (!live.has(k)) { row.wrap.remove(); archRows.delete(k); }
 }
 
 function scopeOverride() {
@@ -1156,8 +1256,9 @@ async function doExport() {
 }
 async function doCopy() {
   try {
-    const { blob } = await rasterize("image/png", 1);
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    // Safari only honours a write that is constructed synchronously in the click,
+    // so hand ClipboardItem the pending blob rather than awaiting it first.
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": rasterize("image/png", 1).then(r => r.blob) })]);
     toast("Chart copied to the clipboard.", "good");
   } catch (e) {
     toast("Copying isn't available here — use Download instead.", "bad");
@@ -1245,7 +1346,11 @@ on("#optGap", "input", e => { state.opts.gap = +e.target.value; $("#gapOut").tex
   on("#opt" + k[0].toUpperCase() + k.slice(1), "change", e => { state.opts[k] = e.target.checked; refresh(); });
 });
 on("#optFormat", "change", e => { state.exportOpts.format = e.target.value; syncInputs(); refresh(); });
-on("#optWidth", "input", e => { state.exportOpts.width = clamp(+e.target.value || 1600, 200, 8000); refresh(); });
+on("#optWidth", "input", e => {
+  state.exportOpts.width = clamp(+e.target.value || 1600, 200, 8000);
+  $$("#sizePresets button").forEach(b => b.setAttribute("aria-pressed", +b.dataset.w === state.exportOpts.width));
+  refresh();
+});
 on("#optQuality", "input", e => { state.exportOpts.quality = +e.target.value; $("#qualityOut").textContent = e.target.value; });
 on("#optTransparent", "change", e => { state.exportOpts.transparent = e.target.checked; });
 on("#scopeSeg", "click", e => {
@@ -1264,7 +1369,7 @@ on("#btnCopy", "click", doCopy);
 
 on("#srcTabs", "click", e => {
   const b = e.target.closest("button[data-src]"); if (!b) return;
-  $$("#srcTabs button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $$("#srcTabs button").forEach(x => x.setAttribute("aria-selected", x === b));
   $$("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.src);
 });
 on("#btnSample", "click", loadSample);
@@ -1305,19 +1410,25 @@ $("#configInput").addEventListener("change", async () => {
     if (d.art) state.art = d.art;
     if (!state.art[OTHER_KEY]) state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
     if (Array.isArray(d.rows) && d.rows.length) { state.rows = d.rows; state.hadPlacements = d.rows.some(r => Number.isFinite(r.placement)); }
-    state.art[OTHER_KEY] = DEFAULT_OTHER_ART();
-syncInputs(); syncManualTable(); refresh();
+    syncInputs(); syncManualTable(); refresh();
     toast("Setup restored.", "good");
   } catch (e) { toast("That file isn't a Metaslice setup.", "bad"); }
   $("#configInput").value = "";
 });
 
+const THEME_KEY = "metaslice:theme";
+const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private browsing */ } };
+const recall = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+
 on("#themeToggle", "click", () => {
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = next;
+  store(THEME_KEY, next);
   refresh();
 });
-if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) document.documentElement.dataset.theme = "light";
+const savedTheme = recall(THEME_KEY);
+if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
+else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) document.documentElement.dataset.theme = "light";
 
 syncInputs(); syncManualTable(); refresh();
 </script>
