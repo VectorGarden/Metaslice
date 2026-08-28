@@ -93,7 +93,9 @@ Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *
 
 `.github/workflows/refresh-archetype-index.yml` rebuilds it on the 1st of each month, which keeps the gap to about a set's worth. It commits only when archetypes were actually added or removed, not merely because the file was regenerated, and deploys afterwards — a push made with `GITHUB_TOKEN` can't trigger the deploy workflow on its own, so it calls it explicitly, passing the commit it just made. The run summary lists what changed. You can also start it by hand from the **Actions** tab.
 
-If you ever check that a refresh really published: the deployment GitHub records is labelled with the commit that *started* the run, not the one that was deployed, because that is how a called workflow is attributed. Compare the served file, or read the `git checkout` line in the deploy job's log. The SHA in the deployments list will look wrong even when everything worked.
+You shouldn't have to check that a refresh really published — the deploy workflow does it. After publishing it fetches `index.html` and `data/archetype-art.js` back from the live site and fails the run if either doesn't match what it just deployed, so a green deploy means the site was actually looked at rather than the upload merely being accepted.
+
+If you do go looking anyway: the deployment GitHub records is labelled with the commit that *started* the run, not the one that was deployed, because that is how a called workflow is attributed. So the SHA in the deployments list reads wrong even when everything worked. Compare the served file, or read the `git checkout` line in the deploy job's log.
 
 To rebuild locally:
 
@@ -177,6 +179,7 @@ The value is your **user** Pages host (`<you>.github.io`), not the repo name —
 ### Notes
 
 - Nothing is run over the files on the way out — the workflow uploads them and Pages serves them verbatim, so there's no Jekyll pass and no need for a `.nojekyll`. It stages a copy of the repository first, minus `.git`, `.github` and `tools`, so only the site itself is published; anything you add ships by default. `CNAME` is deliberately kept, or the custom domain would be reset on the next deploy.
+- The last step of a deploy reads the site back and compares it against what was uploaded, retrying for a couple of minutes while the CDN catches up. It runs after publication, so it can't prevent a bad deploy — it turns one into a failed run rather than something nobody notices. That check is here rather than in the monthly routine because a runner can reach the site and the routine's cloud sandbox cannot.
 - The social card at `assets/og-image.png` is referenced with absolute URLs in the `<head>`, since Discord, X, Slack and friends won't resolve relative ones. If you move the site to a different domain, update the `og:`/`twitter:` tags, `canonical`, `CNAME`, `sitemap.xml` and `robots.txt` — the domain appears in those five places and nowhere else.
 - The `samples/` folder ships with the site so you can link people straight at an example file. Delete it if you'd rather not serve it.
 

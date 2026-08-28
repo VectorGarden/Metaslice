@@ -54,3 +54,59 @@ jobs:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v5
+
+      # deploy-pages reporting success only means the artifact was accepted. It
+      # published the wrong commit once while reporting success (#11), and the
+      # deployments list is attributed to the triggering commit, so neither is
+      # evidence of what the site actually serves. Ask the site.
+      #
+      # This runs after publication, so it cannot prevent a bad deploy — it
+      # turns one into a failed run instead of something nobody notices until
+      # the fallback is needed. Runners reach the site freely, which the cloud
+      # sandbox the monthly check runs in does not.
+      - name: Verify the live site serves what was deployed
+        env:
+          SITE: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -uo pipefail
+          FILES="index.html data/archetype-art.js"
+          for f in $FILES; do
+            if [ ! -f "_site/$f" ]; then
+              echo "::error::_site/$f is missing — the staged tree is not what it should be"
+              exit 1
+            fi
+          done
+
+          base="${SITE%/}"
+          echo "Checking $base"
+          for attempt in $(seq 1 12); do
+            bad=""
+            for f in $FILES; do
+              live="/tmp/live-$(echo "$f" | tr / _)"
+              # A fresh query each attempt so a cached copy cannot pass for a live one.
+              if ! curl -fsS --max-time 30 "$base/$f?v=$GITHUB_RUN_ID-$attempt" -o "$live"; then
+                bad="$f (could not be fetched)"; break
+              fi
+              if ! cmp -s "$live" "_site/$f"; then
+                bad="$f (served $(wc -c <"$live" | tr -d ' ') bytes, deployed $(wc -c <"_site/$f" | tr -d ' '))"; break
+              fi
+            done
+            if [ -z "$bad" ]; then
+              echo "All checked files match what was deployed (attempt $attempt)."
+              echo "Live site matches the deployed commit." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "attempt $attempt: $bad — waiting for the CDN"
+            sleep 10
+          done
+
+          echo "::error::$bad — the site is not serving what this run deployed"
+          {
+            echo "### Live site does not match the deploy"
+            echo
+            echo "Last mismatch: \`$bad\`"
+            echo
+            echo "The artifact was accepted but the site is serving something else."
+            echo "Check which ref the checkout step used — this is how #11 presented."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
