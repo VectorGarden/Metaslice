@@ -29,11 +29,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/configure-pages@v6
-      # No build step — the repository is the site. Hidden files are left out by
-      # default and .github is excluded regardless, so only the site itself is
-      # uploaded. CNAME is not hidden, so the custom domain survives the deploy.
+      # No build step — the repository is the site. Still, a few things in it
+      # are not: stage a copy without them rather than serving the whole repo.
+      # Anything added later ships by default; only what is listed here does not.
+      # CNAME is deliberately not excluded, or the custom domain would be reset.
+      - name: Stage the site
+        run: |
+          mkdir -p _site
+          rsync -a --exclude '_site/' --exclude '.git/' --exclude '.github/' --exclude 'tools/' ./ _site/
+          echo "Shipping:" && ls -A _site
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v5
