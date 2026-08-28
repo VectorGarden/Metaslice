@@ -299,6 +299,8 @@ label.field > span{display:block;font-size:11px;letter-spacing:.09em;text-transf
           <button class="btn" id="btnFetchAll">Get all art</button>
           <button class="btn ghost" id="btnClearArt">Clear all art</button>
         </div>
+        <label class="switch"><input type="checkbox" id="optArtProxy" checked> Fetch art that blocks direct copying through a proxy</label>
+        <p class="hint" style="margin-top:2px;margin-bottom:10px">YGOPRODeck's image host refuses direct reads, so those portraits go through <code>images.weserv.nl</code> — that's what lets them be embedded in a PNG. Switch it off to keep art lookups between you and YGOPRODeck alone; anything that can't be read directly is then linked instead, and raster export is refused while it's there. <b>Upload an image</b> never makes a request either way.</p>
         <div class="arch-list" id="archList"></div>
         <p class="hint"><b>Get all art</b> looks every archetype and sub-archetype up on YGOPRODeck in one pass and fills in whatever it finds. Click any portrait to set that one by hand instead — upload an image, paste a URL, or look it up on its own.</p>
       </div>
@@ -397,6 +399,9 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const keyOf = s => String(s || "").trim().toLowerCase();
+const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private browsing */ } };
+const recall = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const THEME_KEY = "metaslice:theme", PROXY_KEY = "metaslice:art-proxy";
 // A portrait URL can come straight from an untrusted results file; quoting it
 // into a CSS url() without escaping would let `")` break out of the string.
 const cssUrl = u => 'url("' + String(u).replace(/[\r\n]/g, "").replace(/[\\"]/g, "\\$&") + '")';
@@ -438,6 +443,9 @@ const state = {
   colors: {},                  // key -> hex
   art: { [OTHER_KEY]: DEFAULT_OTHER_ART() },   // key -> {src, embedded}
   hadPlacements: false,
+  // Kept out of opts on purpose: this is the reader's own privacy preference,
+  // so it lives in their browser and is never written into a shared setup file.
+  artProxy: recall(PROXY_KEY) !== "off",
   opts: {
     topCut: 0, threshold: 5, title: "", subtitle: "", labels: "outside", legend: "right",
     donut: 0, gap: 2, images: true, artFill: false, subs: true, counts: true, sortAlpha: false
@@ -936,7 +944,9 @@ const blobToDataURL = b => new Promise((res, rej) => { const f = new FileReader(
 
 function setArt(key, art) { if (art) state.art[key] = art; else delete state.art[key]; refresh(); }
 
-const CORS_NOTE = "That image's host won't allow copying and the proxy couldn't reach it either, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG.";
+const corsNote = () => state.artProxy
+  ? "That image's host won't allow copying and the proxy couldn't reach it either, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — download it and upload the file instead, or export SVG."
+  : "That image's host won't allow copying and the art proxy is switched off, so it can only be linked. It shows in the preview, but raster export is blocked while it's there — switch the proxy on, or download the image and upload it as a file.";
 
 // Portraits have to be read as bytes to be inlined, and a host that serves no
 // CORS headers (YGOPRODeck's among them) won't allow that. images.weserv.nl
@@ -963,7 +973,7 @@ async function embedURL(key, url, quiet) {
   try {
     blob = await fetchImageBlob(url, false);
   } catch (direct) {
-    if (/^https?:/i.test(url)) {
+    if (state.artProxy && /^https?:/i.test(url)) {
       try { blob = await fetchImageBlob(proxied(url), true); viaProxy = true; }
       catch (throughProxy) { /* fall through to linking */ }
     }
@@ -975,7 +985,7 @@ async function embedURL(key, url, quiet) {
     return "embedded";
   }
   setArt(key, { src: url, embedded: false });
-  if (!quiet) toast(CORS_NOTE, "bad", 8000);
+  if (!quiet) toast(corsNote(), "bad", 8000);
   return "linked";
 }
 async function fetchYgoArt(key, name, quiet) {
@@ -1038,7 +1048,7 @@ async function fetchAllArt() {
   // Say it plainly once per run: the art host refused the read, so those
   // portraits came through a third party rather than straight from the source.
   if (usedProxy) toast(`${usedProxy} of those wouldn't allow a direct read, so they came through the images.weserv.nl proxy.`, "", 7000);
-  if (linked) toast(CORS_NOTE, "bad", 9000);
+  if (linked) toast(corsNote(), "bad", 9000);
 }
 
 let artMenu = null;
@@ -1405,6 +1415,7 @@ function syncInputs() {
   $("#optLabels").value = o.labels; $("#optLegend").value = o.legend;
   $("#optDonut").value = o.donut; $("#donutOut").textContent = o.donut + "%";
   $("#optGap").value = o.gap; $("#gapOut").textContent = o.gap;
+  $("#optArtProxy").checked = state.artProxy;
   $("#optImages").checked = o.images; $("#optArtFill").checked = o.artFill; $("#optSubs").checked = o.subs;
   $("#optCounts").checked = o.counts; $("#optSortAlpha").checked = o.sortAlpha;
   $("#optFormat").value = e.format; $("#optWidth").value = e.width;
@@ -1454,6 +1465,13 @@ on("#srcTabs", "click", e => {
   $$("#srcTabs button").forEach(x => x.setAttribute("aria-selected", x === b));
   $$("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== b.dataset.src);
 });
+on("#optArtProxy", "change", e => {
+  state.artProxy = e.target.checked;
+  store(PROXY_KEY, state.artProxy ? "on" : "off");
+  toast(state.artProxy
+    ? "Art that blocks direct copying will be fetched through images.weserv.nl."
+    : "Proxy off — art lookups now stay between you and YGOPRODeck. Portraits it won't hand over directly can't be embedded.", "", 6000);
+});
 on("#btnSample", "click", loadSample);
 on("#btnFetchAll", "click", fetchAllArt);
 on("#btnClearArt", "click", () => { state.art = { [OTHER_KEY]: DEFAULT_OTHER_ART() }; refresh(); toast("Art cleared.", "good"); });
@@ -1497,10 +1515,6 @@ $("#configInput").addEventListener("change", async () => {
   } catch (e) { toast("That file isn't a Metaslice setup.", "bad"); }
   $("#configInput").value = "";
 });
-
-const THEME_KEY = "metaslice:theme";
-const store = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* private browsing */ } };
-const recall = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 
 on("#themeToggle", "click", () => {
   const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
