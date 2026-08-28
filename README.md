@@ -13,13 +13,10 @@ metaslice/
 ├── index.html              the whole app
 ├── 404.html                themed not-found page
 ├── CNAME                   custom domain for GitHub Pages
-├── .nojekyll               serve the files as-is, no Jekyll pass
 ├── site.webmanifest        installable-app metadata
 ├── robots.txt
 ├── sitemap.xml
 ├── LICENSE                 MIT
-├── .github/workflows/
-│   └── deploy.yml          publishes to Pages on every push to main
 ├── assets/
 │   ├── icon.svg            source icon (also the in-app logo)
 │   ├── favicon.ico         multi-size 16→256 for hosting
@@ -71,7 +68,7 @@ Art is keyed per archetype and per sub-archetype, so a *Ryzeal* portrait and a *
 - **Sub-archetype bubbles** — small circular portraits near the rim, one per variant. Each variant also gets its own shaded band across the wedge with a divider between them, so you can read how the slice splits — at low contrast on a flat slice, stronger over artwork, and always drawn above the art so filling the slice never hides the breakdown. Hover any band for the exact split.
 - Labels around the edge with collision-avoided leader lines, inside the slices, or legend-only. Legend right, underneath, or off.
 - Centre hole for a donut (the total sits in the middle), slice gap, deck counts next to percentages, alphabetical order.
-- Light/dark toggle in the header — the chart follows it, so exports match what you see.
+- Light/dark toggle in the header — the chart follows it, so exports match what you see, and your choice is remembered next visit.
 
 ## Export
 
@@ -111,11 +108,11 @@ git remote add origin git@github.com:<you>/metaslice.git
 git push -u origin main
 ```
 
-**2. Turn on Pages.** Repo → **Settings** → **Pages** → **Build and deployment** → Source: **GitHub Actions**. Don't pick "Deploy from a branch" — the included workflow handles it.
+**2. Turn on Pages.** Repo → **Settings** → **Pages** → **Build and deployment** → Source: **Deploy from a branch**, branch `main`, folder `/ (root)`. There's no build step, so GitHub serves the files as they are — nothing else to configure.
 
 **3. Set the custom domain.** Same page, **Custom domain** → `metaslice.reizu.dev` → Save. GitHub verifies the DNS, which usually takes a minute or two but can take up to an hour. Once the check passes, tick **Enforce HTTPS** (the certificate is issued automatically).
 
-That's it. Every push to `main` republishes; you can also trigger a deploy by hand from the **Actions** tab.
+That's it. Every push to `main` republishes.
 
 ### DNS
 
@@ -129,7 +126,7 @@ The value is your **user** Pages host (`<you>.github.io`), not the repo name —
 
 ### Notes
 
-- `.nojekyll` stops GitHub running Jekyll over the files. Nothing here starts with an underscore so it'd probably survive anyway, but it also skips a needless build step.
+- Pages runs the files through Jekyll on the way out. That's harmless here: nothing is named with a leading underscore, and neither `index.html` nor `404.html` contains Liquid syntax for it to touch. A `.nojekyll` file would skip the pass, but there's nothing for it to protect.
 - The social card at `assets/og-image.png` is referenced with absolute URLs in the `<head>`, since Discord, X, Slack and friends won't resolve relative ones. If you move the site to a different domain, update the `og:`/`twitter:` tags, `canonical`, `CNAME`, `sitemap.xml` and `robots.txt` — the domain appears in those five places and nowhere else.
 - The `samples/` folder ships with the site so you can link people straight at an example file. Delete it if you'd rather not serve it.
 
